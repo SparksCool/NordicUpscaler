@@ -37,8 +37,8 @@ jobs:
         run: |
           $VCPKG_DIR="${{ github.workspace }}/vcpkg"
           $ENV:VCPKG_ROOT=$VCPKG_DIR
-          $ENV:CMAKE_PREFIX_PATH="${{ github.workspace }}/vcpkg/installed/x64-windows"
-          $VCPKG_DIR/vcpkg.exe install
+          $ENV:CMAKE_PREFIX_PATH="${{ github.workspace }}\vcpkg\installed\x64-windows"
+          $VCPKG_DIR\vcpkg.exe install
         shell: pwsh
 
       - name: Configure CMake
