@@ -32,6 +32,15 @@ jobs:
           bootstrap-vcpkg.bat -disableMetrics
           vcpkg integrate install
 
+      - name: Install Dependencies with vcpkg
+        working-directory: ${{ github.workspace }}
+        run: |
+          $VCPKG_DIR="${{ github.workspace }}/vcpkg"
+          $ENV:VCPKG_ROOT=$VCPKG_DIR
+          $ENV:CMAKE_PREFIX_PATH="${{ github.workspace }}/vcpkg/installed/x64-windows"
+          $VCPKG_DIR/vcpkg.exe install
+        shell: pwsh
+
       - name: Configure CMake
         run: |
           echo "Using VCPKG_ROOT=${{ env.VCPKG_ROOT }}"
