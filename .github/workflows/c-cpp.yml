@@ -28,6 +28,7 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git %VCPKG_ROOT%
           cd %VCPKG_ROOT%
           bootstrap-vcpkg.bat
+          vcpkg integrate install
 
       - name: Configure CMake
         run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
