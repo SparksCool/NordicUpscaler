@@ -24,17 +24,19 @@ jobs:
         run: git clone --depth 1 https://github.com/CharmedBaryon/CommonLibSSE-NG.git $COMMONLIB_SSE_FOLDER
 
       - name: Set up vcpkg
+        shell: cmd
         run: |
+          set VCPKG_ROOT=%CD%\vcpkg
           git clone https://github.com/microsoft/vcpkg.git %VCPKG_ROOT%
           cd %VCPKG_ROOT%
-          bootstrap-vcpkg.bat
+          bootstrap-vcpkg.bat -disableMetrics
           vcpkg integrate install
 
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
-        env:
-          COMMONLIB_SSE_FOLDER: ${{ env.COMMONLIB_SSE_FOLDER }}
-          VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
+        run: |
+          echo "Using VCPKG_ROOT=${{ env.VCPKG_ROOT }}"
+          cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        shell: pwsh
 
       - name: Build SKSE Plugin
         run: cmake --build build --config Release
