@@ -93,10 +93,11 @@ target_include_directories(
 	${CLIB_UTIL_INCLUDE_DIRS}
     ${SKSE_MCP_INCLUDE_DIRS}
 	${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows-static/include
 )
 
+
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/vcpkg_installed/x64-windows/lib/spdlog.lib")
 target_compile_definitions(${PROJECT_NAME} PRIVATE IS_HOST_PLUGIN)
 
 set(wildlander_output false)
