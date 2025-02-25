@@ -1,8 +1,12 @@
 #include "logger.h"
+#include "MCP.h"
+#include <Settings.h>
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         // Start
+        Settings::LoadSettings();
+        MCP::Register();
     }
     if (message->type == SKSE::MessagingInterface::kNewGame || message->type == SKSE::MessagingInterface::kPostLoadGame) {
         // Post-load
