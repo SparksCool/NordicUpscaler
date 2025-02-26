@@ -40,7 +40,8 @@ namespace MCP {
         ImGui::Text("Nordic Upscaler Debug Info");
         ImGui::Text("Current Resolution: %dx%d", Globals::renderer->GetScreenSize().width, Globals::renderer->GetScreenSize().height);
 
-        if (Settings::Plugin_Enabled) {
+
+        if (Settings::Streamline_Init) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),"Streamline Initialized: True");
         } else {
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),"Streamline Initialized: False");
