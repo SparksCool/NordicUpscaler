@@ -109,8 +109,12 @@ target_include_directories(
     ${STREAMLINE_PATH}/include # <--- Include Streamline headers
 )
 
+# Link Streamline library
+target_link_libraries(${PROJECT_NAME} PRIVATE ${STREAMLINE_PATH}/lib/x64/sl.interposer.lib)
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
 target_compile_definitions(${PROJECT_NAME} PRIVATE IS_HOST_PLUGIN)
+target_link_libraries(NordicUpscaler PRIVATE delayimp)
+set_target_properties(NordicUpscaler PROPERTIES LINK_FLAGS "/DELAYLOAD:sl.interposer.dll") # <--- Delay load Streamline DLL
 
 set(wildlander_output false)
 set(steam_owrt_output false)

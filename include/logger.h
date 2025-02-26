@@ -1,4 +1,5 @@
 #pragma once
+#include "spdlog/sinks/basic_file_sink.h"
 
 static void SetupLog() {
     auto logsFolder = SKSE::log::log_directory();
@@ -15,6 +16,6 @@ static void SetupLog() {
     spdlog::set_level(spdlog::level::info);
     spdlog::flush_on(spdlog::level::info);
 #endif
-    logger::info("Name of the plugin is {}.", pluginName);
-    logger::info("Version of the plugin is {}.", SKSE::PluginDeclaration::GetSingleton()->GetVersion());
+    logger::info("Name: {}.", pluginName);
+    logger::info("Version: {}.", SKSE::PluginDeclaration::GetSingleton()->GetVersion());
 }

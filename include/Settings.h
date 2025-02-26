@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SimpleIni.h"
+#include <RE/R/Renderer.h>
 
 namespace Settings {
 
@@ -11,4 +12,5 @@ namespace Settings {
     void ResetSettings();
 
     inline bool Plugin_Enabled = true;
+    inline bool Streamline_Init = false;
 }
