@@ -8,12 +8,6 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         // Start
         Settings::LoadSettings();
-
-        // TODO(SparksCool): Create a streamline file for this
-        // Init Streamline
-        Utils::Streamline::getSingleton()->loadInterposer();
-        Settings::Streamline_Init = Utils::Streamline::getSingleton()->initSL();
-
         MCP::Register();
     }
     if (message->type == SKSE::MessagingInterface::kNewGame || message->type == SKSE::MessagingInterface::kPostLoadGame) {
@@ -29,6 +23,5 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
 
     Globals::init();
-
     return true;
 }

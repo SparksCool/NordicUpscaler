@@ -39,10 +39,16 @@ namespace MCP {
         ImGui::Text("Current Resolution: %dx%d", Globals::renderer->GetScreenSize().width, Globals::renderer->GetScreenSize().height);
 
 
-        if (Settings::Streamline_Init) {
+        if (Globals::Streamline_Init) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),"Streamline Initialized: True");
         } else {
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),"Streamline Initialized: False");
+        }
+
+        if (Globals::DLSS_Available) {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "DLSS Available: True");
+        } else {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "DLSS Available: False");
         }
     }
 }

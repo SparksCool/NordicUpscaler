@@ -12,5 +12,4 @@ namespace Settings {
     void ResetSettings();
 
     inline bool Plugin_Enabled = true;
-    inline bool Streamline_Init = false;
 }

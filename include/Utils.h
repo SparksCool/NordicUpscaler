@@ -14,5 +14,6 @@ namespace Utils {
 
         void loadInterposer();
         bool initSL();
+        bool DLSSAvailable();
     };
 }
