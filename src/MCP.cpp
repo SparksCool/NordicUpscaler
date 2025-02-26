@@ -3,6 +3,7 @@
 #include "SKSEMCP/SKSEMenuFramework.hpp"
 #include <Settings.h>
 #include <Globals.h>
+#include <SKSEMCP/SKSEMenuFramework.hpp>
 
 namespace MCP {
     void Register() { 
@@ -31,6 +32,9 @@ namespace MCP {
         ImGui::Text("Nordic Upscaler Settings");
 
         ImGui::Checkbox("Plugin Enabled", &Settings::Plugin_Enabled);
+
+        ImGui::Combo("DLSS Preset", &Settings::Selected_Preset_DLSS, Settings::DLSS_Presets,
+                     IM_ARRAYSIZE(Settings::DLSS_Presets));
 
     }
 

@@ -8,4 +8,5 @@ set(headers ${headers}
 	include/Hooks.h
 	include/MCP.h
 	include/Globals.h
+	include/Streamline.h
 )

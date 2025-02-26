@@ -7,4 +7,5 @@ set(sources ${sources}
 	src/Hooks.cpp
 	src/MCP.cpp
  	src/Globals.cpp
+	src/Streamline.cpp
 )

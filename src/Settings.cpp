@@ -22,6 +22,7 @@ namespace Settings {
         ini.SetUnicode();
 
         ini.SetBoolValue(L"General", L"Plugin_Enabled", Plugin_Enabled);
+        ini.SetLongValue(L"General", L"Selected_Preset_DLSS", Selected_Preset_DLSS);
 
         ini.SaveFile(settingsPath);
 
@@ -31,6 +32,8 @@ namespace Settings {
     /* Reset our INI settings */
     void ResetSettings() {
         Plugin_Enabled = true;
+        Selected_Preset_DLSS = 0;
+
 
         logger::info("Settings reset.");
     }

@@ -1,5 +1,6 @@
 #include <Globals.h>
 #include <Utils.h>
+#include <Streamline.h>
 
 namespace Globals {
     RE::BSGraphics::Renderer* renderer = nullptr;
@@ -11,8 +12,8 @@ namespace Globals {
         
 
         /* Initialize Streamline then check if DLSS is available */
-        Utils::Streamline::getSingleton()->loadInterposer();
-        Streamline_Init = Utils::Streamline::getSingleton()->initSL();
-        DLSS_Available = Utils::Streamline::getSingleton()->DLSSAvailable();
+        Streamline::Streamline::getSingleton()->loadInterposer();
+        Streamline_Init = Streamline::Streamline::getSingleton()->initSL();
+        DLSS_Available = Streamline::Streamline::getSingleton()->DLSSAvailable();
     }
 }

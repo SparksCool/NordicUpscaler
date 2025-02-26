@@ -4,6 +4,7 @@
 #include <RE/R/Renderer.h>
 
 namespace Settings {
+    
 
     inline const char* settingsPath{"Data/SKSE/Plugins/NordicUpscaler.ini"};
 
@@ -12,4 +13,7 @@ namespace Settings {
     void ResetSettings();
 
     inline bool Plugin_Enabled = true;
+    inline int Selected_Preset_DLSS = 0;
+    inline const char* DLSS_Presets[] = {"Performance", "Balanced", "Quality", "Ultra Performance", "Ultra Quality"};
+
 }
