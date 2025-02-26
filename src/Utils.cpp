@@ -4,6 +4,7 @@
 #include <sl_core_api.h>
 #include <sl_consts.h>
 #include <sl_dlss.h>
+#include <Globals.h>
 
 namespace Utils {
     void Streamline::loadInterposer() {
@@ -12,15 +13,20 @@ namespace Utils {
     }
 
     bool Streamline::initSL() {
+        // Set D3D11 device
+        slSetD3DDevice(Globals::g_D3D11Device);
+
         sl::Preferences pref{};
 
-        pref.featuresToLoad = 0;
+        static const sl::Feature features[] = { sl::kFeatureDLSS };
+        pref.featuresToLoad = features;
+        pref.numFeaturesToLoad = sizeof(features) / sizeof(sl::Feature);
 
-#ifndef NDEBUG
+    #ifndef NDEBUG
         pref.showConsole = true;
         pref.logLevel = sl::LogLevel::eVerbose;
         pref.logMessageCallback = [](sl::LogType type, const char* msg) { logger::info("[Streamline] {}", msg); };
-#endif
+    #endif
 
         sl::Result result = slInit(pref);
 
@@ -54,8 +60,6 @@ namespace Utils {
                 if (SL_FAILED(result, slIsFeatureSupported(sl::kFeatureDLSS, adapterInfo))) {
                     // Requested feature is not supported on the system, fallback to the default method
                     logger::warn("[Streamline] DLSS is not supported on this adapter. Error: {}", static_cast<int>(result));
-
-                    return false;
                 } else {
                     // Feature is supported on this adapter!
                     logger::info("[Streamline] DLSS is supported on this adapter.");

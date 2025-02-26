@@ -13,6 +13,7 @@ namespace Utils {
         }
 
         void loadInterposer();
+        void setupSLDevice();
         bool initSL();
         bool DLSSAvailable();
     };
