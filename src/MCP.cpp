@@ -28,8 +28,6 @@ namespace MCP {
             Settings::ResetSettings();
         }
 
-        ImGui::Separator();
-
         ImGui::Text("Nordic Upscaler Settings");
 
         ImGui::Checkbox("Plugin Enabled", &Settings::Plugin_Enabled);

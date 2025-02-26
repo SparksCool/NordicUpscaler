@@ -92,7 +92,7 @@ if(NOT DEFINED ENV{STREAMLINE_FOLDER})
   message(FATAL_ERROR "Missing STREAMLINE_FOLDER environment variable")
 endif()
 
-set(STREAMLINE_PATH $ENV{STREAMLINE_FOLDER})
+set(STREAMLINE_PATH $ENV{STREAMLINE_FOLDER}) # <--- Set Streamline path
 
 # Link Streamline library
 target_link_directories(${PROJECT_NAME} PRIVATE ${STREAMLINE_PATH}/lib)
@@ -113,8 +113,8 @@ target_include_directories(
 target_link_libraries(${PROJECT_NAME} PRIVATE ${STREAMLINE_PATH}/lib/x64/sl.interposer.lib)
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
 target_compile_definitions(${PROJECT_NAME} PRIVATE IS_HOST_PLUGIN)
-target_link_libraries(NordicUpscaler PRIVATE delayimp)
-set_target_properties(NordicUpscaler PROPERTIES LINK_FLAGS "/DELAYLOAD:sl.interposer.dll") # <--- Delay load Streamline DLL
+target_link_libraries(NordicUpscaler PRIVATE delayimp) # <--- delayimp is required for delay loading
+set_target_properties(NordicUpscaler PROPERTIES LINK_FLAGS "/DELAYLOAD:sl.interposer.dll") # <--- Delay load Streamline DLL, Does not work otherwise also NVIDIA licensing
 
 set(wildlander_output false)
 set(steam_owrt_output false)

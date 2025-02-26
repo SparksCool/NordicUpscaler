@@ -12,6 +12,10 @@ STREAMLINE_FOLDER: The path to your clone of Streamline.
 
 
 # Credits
-- [Example Plugin](https://github.com/QY-MODS/SKSE_template_QY/tree/main)
-- SKSE Team
-- Bethesda
+- [Example Plugin](https://github.com/QY-MODS/SKSE_template_QY/tree/main) - Used as a base for the project.
+- SKSE Team - For SKSE
+- Bethesda - For Skyrim (Praise Godd Howard)
+- NVIDIA for DLSS and Streamline
+- CommonLibSSE-NG - This project would be near impossible without it.
+- Immersive Weapon Switch - Used as a reference when I was getting started.
+- Community Shaders - Used as a reference with regards to rendering and Streamline implementation.

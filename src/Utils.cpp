@@ -7,6 +7,7 @@
 
 namespace Utils {
     void Streamline::loadInterposer() {
+        // TODO(SparksCool): Ensure this is compatible with community shaders sl.interposer.dll
         interposer = LoadLibraryW(L"Data/SKSE/Plugins/Streamline/sl.interposer.dll");
     }
 
@@ -14,6 +15,8 @@ namespace Utils {
         sl::Preferences pref{};
         sl::Result result = slInit(pref);
 
+        // This helps to debug, cross reference results with the result enum contained in sl_result.h
+        // more descriptive messages might be added in the future
         logger::info("[Streamline] Streamline start attempted with result: {}", static_cast<int>(result));
 
         return result == sl::Result::eOk;
