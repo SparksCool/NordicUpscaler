@@ -44,6 +44,7 @@ set(ENABLE_SKYRIM_AE ON CACHE BOOL " " FORCE)
 set(ENABLE_SKYRIM_VR ON CACHE BOOL " " FORCE)
 set(BUILD_TESTS OFF CACHE BOOL " " FORCE)
 
+# Add the CommonLibSSE dependency
 add_subdirectory("$ENV{COMMONLIB_SSE_FOLDER}" ${CMAKE_CURRENT_BINARY_DIR}/_deps/clib-build)
 get_target_property(COMMONLIB_SRC_DIR CommonLibSSE SOURCE_DIR)
 
@@ -85,6 +86,17 @@ add_commonlibsse_plugin(
   AUTHOR AUTHOR_NAME
   SOURCES ${headers} ${sources}
 )
+
+# Add the Streamline dependency
+if(NOT DEFINED ENV{STREAMLINE_FOLDER})
+  message(FATAL_ERROR "Missing STREAMLINE_FOLDER environment variable")
+endif()
+
+set(STREAMLINE_PATH $ENV{STREAMLINE_FOLDER})
+
+# Link Streamline library
+target_link_directories(${PROJECT_NAME} PRIVATE ${STREAMLINE_PATH}/lib)
+
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/PCH.h) # <--- PCH.h is required!
 target_include_directories(
@@ -94,8 +106,8 @@ target_include_directories(
     ${SKSE_MCP_INCLUDE_DIRS}
 	${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows-static/include
+    ${STREAMLINE_PATH}/include # <--- Include Streamline headers
 )
-
 
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
 target_compile_definitions(${PROJECT_NAME} PRIVATE IS_HOST_PLUGIN)

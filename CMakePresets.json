@@ -13,7 +13,7 @@
         },
         "cacheVariables": {
           "CMAKE_CXX_COMPILER": "cl.exe",
-          "CMAKE_CXX_FLAGS": "/permissive- /Zc:preprocessor /EHsc /MP /W4 -DWIN32_LEAN_AND_MEAN -DNOMINMAX -DUNICODE -D_UNICODE -DSPDLOG_FMT_EXTERNAL",
+          "CMAKE_CXX_FLAGS": "/permissive- /Zc:preprocessor /EHsc /MP /W4 -DWIN32_LEAN_AND_MEAN -DNOMINMAX -DUNICODE -D_UNICODE -DSPDLOG_FMT_EXTERNAL -DCMAKE_GENERATOR_PLATFORM=x64",
           "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
           "VCPKG_OVERLAY_PORTS": {
             "type": "STRING",
