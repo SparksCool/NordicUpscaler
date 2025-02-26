@@ -4,6 +4,9 @@
 #include <sl.h>
 #include <sl_consts.h>
 #include <sl_core_api.h>
+// Copyright (c) 2025 SparksCool
+// Licensed under the MIT license.
+
 #include <sl_dlss.h>
 #include <sl_result.h>
 

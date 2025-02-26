@@ -1,3 +1,6 @@
+// Copyright (c) 2025 SparksCool
+// Licensed under the MIT license.
+
 #include <Globals.h>
 #include <Utils.h>
 #include <Streamline.h>

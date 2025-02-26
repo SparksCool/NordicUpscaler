@@ -1,3 +1,6 @@
+// Copyright (c) 2025 SparksCool
+// Licensed under the MIT license.
+
 #include "logger.h"
 #include "MCP.h"
 #include <Settings.h>

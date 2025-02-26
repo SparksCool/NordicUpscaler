@@ -1,3 +1,6 @@
+// Copyright (c) 2025 SparksCool
+// Licensed under the MIT license.
+
 #include "MCP.h"
 
 #include "SKSEMCP/SKSEMenuFramework.hpp"

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 SparksCool
+// Licensed under the MIT license.
+
 #include <Utils.h>
 #include <sl.h>
 #include <sl_result.h>
