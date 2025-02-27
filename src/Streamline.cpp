@@ -139,7 +139,7 @@ void Streamline::allocateBuffers() {
             colorDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // Common color format
             colorDesc.SampleDesc.Count = 1;
             colorDesc.Usage = D3D11_USAGE_DEFAULT;
-            colorDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+            colorDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
             colorDesc.CPUAccessFlags = 0;
             colorDesc.MiscFlags = 0;
 
@@ -185,7 +185,7 @@ void Streamline::allocateBuffers() {
             motionDesc.Format = DXGI_FORMAT_R16G16_FLOAT;  // Common format for motion vectors
             motionDesc.SampleDesc.Count = 1;
             motionDesc.Usage = D3D11_USAGE_DEFAULT;
-            motionDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+            motionDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
             motionDesc.CPUAccessFlags = 0;
             motionDesc.MiscFlags = 0;
 
@@ -309,16 +309,22 @@ void Streamline::allocateBuffers() {
             return;
         }
 
+        logger::info("backupViews init");
         ID3D11RenderTargetView* backupViews[8];
         ID3D11DepthStencilView* backupDsv;
+        logger::info("backupViews init done");
         Globals::context->OMGetRenderTargets(8, REX_CAST(backupViews, ID3D11RenderTargetView*), REX_CAST(&backupDsv, ID3D11DepthStencilView*));  // Backup bound render targets
         Globals::context->OMSetRenderTargets(0, nullptr, nullptr);         // Unbind all bound render targets
-
+        logger::info("OSMRenderTargets done");
 
         // Retrieve game buffers
+        logger::info("swapChain");
         auto& swapChain = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
+        logger::info("motionVectors");
         auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
-        auto& depth = renderer->GetRendererData()->depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+        logger::info("depth");
+        RE::BSGraphics::DepthStencilData depth{};
+        //= renderer->GetRendererData()->depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 
         ID3D11ShaderResourceView* dummyDepthSRV = nullptr;
         // Create dummy depth texture if it doesn't exist
@@ -451,6 +457,10 @@ void Streamline::allocateBuffers() {
         }
 
         swapChainResource->Release();
+        // Release depth buffer resource
+        if (dummyDepthSRV) {
+            dummyDepthSRV->Release();
+        }
         logger::info("Frame present handled successfully.");
     }
 
