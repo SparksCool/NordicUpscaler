@@ -10,8 +10,13 @@
 #include <sl_dlss.h>
 #include <sl_result.h>
 #include <Settings.h>
+#include <d3d11.h>
 
 namespace Streamline {
+
+    // Setup variables
+    sl::Constants constants = {};
+
     void Streamline::loadInterposer() {
         // TODO(SparksCool): Ensure this is compatible with community shaders sl.interposer.dll
         interposer = LoadLibraryW(L"Data/SKSE/Plugins/Streamline/sl.interposer.dll");
@@ -113,16 +118,16 @@ namespace Streamline {
 
     void Streamline::loadDlSSBuffers() {
         // Setup viewport
-        sl::ViewportHandle view{Globals::viewport};
+        sl::ViewportHandle view{viewport};
 
         // Create shared buffers
-        sl::Resource colorIn = {sl::ResourceType::eTex2d, Globals::colorBufferShared, 0};
+        sl::Resource colorIn = {sl::ResourceType::eTex2d, colorBufferShared, 0};
 
-        sl::Resource depthIn = {sl::ResourceType::eTex2d, Globals::depthBufferShared, 0};
+        sl::Resource depthIn = {sl::ResourceType::eTex2d, depthBufferShared, 0};
 
-        sl::Resource motionVectorsIn = {sl::ResourceType::eTex2d, Globals::motionVectorsShared, 0};
+        sl::Resource motionVectorsIn = {sl::ResourceType::eTex2d, motionVectorsShared, 0};
 
-        sl::Resource outputBuffer = {sl::ResourceType::eTex2d, Globals::dlssOutputBuffer, 0};
+        sl::Resource colorOut = {sl::ResourceType::eTex2d, colorBufferShared, 0};
 
         sl::Extent fullExtent{0, 0, (UINT)Globals::renderer->GetScreenSize().width,
                               (UINT)Globals::renderer->GetScreenSize().height};
@@ -131,13 +136,195 @@ namespace Streamline {
         sl::ResourceTag colorInTag = sl::ResourceTag {&colorIn, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
         sl::ResourceTag depthInTag = sl::ResourceTag{&depthIn, sl::kBufferTypeDepth, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
         sl::ResourceTag motionVectorsInTag = sl::ResourceTag{&motionVectorsIn, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
-        sl::ResourceTag outputBufferTag = sl::ResourceTag{&outputBuffer, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
+        sl::ResourceTag outputBufferTag = sl::ResourceTag{&colorOut, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
 
         sl::ResourceTag inputs[] = {colorInTag, outputBufferTag, depthInTag, motionVectorsInTag};
 
         if (SL_FAILED(res, slSetTag(view, inputs, _countof(inputs), Globals::context))) {
             logger::warn("[Streamline] Failed to set tags: {}", static_cast<int>(res));
         }
+    }
+
+    void Streamline::updateConstants() {
+    
+        logger::info("Updating DLSS constants...");
+
+        if (!Globals::DLSS_Available) {
+            logger::warn("DLSS is not available. Skipping update.");
+            return;
+        }
+
+        auto renderer = Globals::renderer;
+        if (!renderer) {
+            logger::warn("Renderer is null, cannot update constants.");
+            return;
+        }
+
+        // Set up matrices (dummy identity matrices for now)
+        constants.cameraViewToClip = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+        constants.clipToCameraView = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+        constants.clipToLensClip = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+        constants.clipToPrevClip = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+        constants.prevClipToClip = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+
+        // Other DLSS constants
+        constants.jitterOffset = {0.0f, 0.0f};
+        constants.mvecScale = {1.0f, 1.0f};
+        constants.cameraPinholeOffset = {1.f, 0.f};
+        constants.cameraPos = {1.0f, 1.0f, 1.0f};
+        constants.cameraUp = {0.0f, 1.0f, 0.0f};
+        constants.cameraRight = {1.0f, 0.0f, 0.0f};
+        constants.cameraFwd = {0.0f, 0.0f, -1.0f};
+
+        // Retrieve near/far values
+        constants.cameraNear = (*(float*)(REL::RelocationID(517032, 403540).address() + 0x40));
+        constants.cameraFar = (*(float*)(REL::RelocationID(517032, 403540).address() + 0x44));
+
+        constants.cameraFOV = 90.0f;
+        constants.cameraAspectRatio = 16.0f / 9.0f;
+        constants.motionVectorsInvalidValue = 1.0f;
+        constants.depthInverted = sl::Boolean::eFalse;
+        constants.cameraMotionIncluded = sl::Boolean::eTrue;
+        constants.motionVectors3D = sl::Boolean::eFalse;
+        constants.reset = sl::Boolean::eFalse;
+        constants.orthographicProjection = sl::Boolean::eFalse;
+        constants.motionVectorsDilated = sl::Boolean::eFalse;
+        constants.motionVectorsJittered = sl::Boolean::eFalse;
+
+        logger::info("DLSS constants updated.");
+    }
+
+    void Streamline::HandlePresent() {
+        logger::info("Handling frame present...");
+
+
+        if (!Globals::DLSS_Available) {
+            logger::warn("DLSS is not available. Skipping frame processing.");
+            return;
+        }
+
+        if (!Globals::context) {
+            logger::warn("D3D11 context is null. Cannot process frame.");
+            return;
+        }
+
+        auto renderer = Globals::renderer;
+        if (!renderer) {
+            logger::warn("Renderer is null. Cannot process frame.");
+            return;
+        }
+
+        // Retrieve game buffers
+        auto& swapChain = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
+        auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
+        auto& depth = renderer->GetRendererData()->depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+
+        ID3D11ShaderResourceView* dummyDepthSRV = nullptr;
+        // Create dummy depth texture if it doesn't exist
+        if (!depth.depthSRV) {
+            logger::warn("Depth buffer SRV is missing, generating dummy.");
+
+            D3D11_TEXTURE2D_DESC desc{};
+            desc.Width = Globals::OutputResolutionWidth;
+            desc.Height = Globals::OutputResolutionHeight;
+            desc.MipLevels = 1;
+            desc.ArraySize = 1;
+            desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+            desc.SampleDesc.Count = 1;
+            desc.Usage = D3D11_USAGE_DEFAULT;
+            desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+
+            // Create the depth texture
+            ID3D11Resource* depthTexture = nullptr;
+            Globals::g_D3D11Device->CreateTexture2D(REX_CAST(&desc, D3D11_TEXTURE2D_DESC), nullptr, REX_CAST(&depthTexture, ID3D11Texture2D*));
+
+            // Create the depth srv
+            D3D11_SHADER_RESOURCE_VIEW_DESC dsvDesc{};
+            dsvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+            dsvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+            dsvDesc.Texture2D.MipLevels = 1;
+
+            // create the srv
+            HRESULT hr = Globals::g_D3D11Device->CreateShaderResourceView(REX_CAST(depthTexture, ID3D11Resource),
+                                                             REX_CAST(&dsvDesc, D3D11_SHADER_RESOURCE_VIEW_DESC),
+                                                             REX_CAST(&dummyDepthSRV, ID3D11ShaderResourceView*));
+
+            if (FAILED(hr)) {
+                logger::warn("Failed to create dummy depth SRV.");
+                // Log error
+                logger::warn("Error code: {}", hr);
+                return;
+            }
+
+            depth.depthSRV = dummyDepthSRV;
+
+
+        }
+
+        if (!swapChain.SRV) {
+            logger::warn("Swap chain SRV is missing.");
+            return;
+        }
+
+        ID3D11Resource* swapChainResource = nullptr;
+        swapChain.SRV->GetResource(&swapChainResource);
+        if (!swapChainResource) {
+            logger::warn("Failed to get swap chain resource.");
+            return;
+        }
+
+        // Copy buffers
+        Globals::context->CopyResource(REX_CAST(colorBufferShared, ID3D11Texture2D),
+                              REX_CAST(swapChainResource, ID3D11Texture2D));
+
+
+        if (motionVectors.SRV) {
+            ID3D11Resource* motionVectorsResource = nullptr;
+            motionVectors.SRV->GetResource(&motionVectorsResource);
+            Globals::context->CopyResource(REX_CAST(motionVectorsShared, ID3D11Texture2D),
+                                  REX_CAST(motionVectorsResource, ID3D11Texture2D));
+        } else {
+            logger::warn("Motion vectors SRV is missing.");
+        }
+
+        if (depth.depthSRV) {
+            ID3D11Resource* depthResource = nullptr;
+            dummyDepthSRV->GetResource(&depthResource);
+            Globals::context->CopyResource(REX_CAST(depthBufferShared, ID3D11Texture2D),
+                                  REX_CAST(depthResource, ID3D11Texture2D));
+        } else {
+            logger::warn("Depth buffer SRV is missing.");
+            if (!dummyDepthSRV) {
+                logger::warn("Dummy depth SRV is missing.");
+            } else {
+                ID3D11Resource* depthResource = nullptr;
+                depth.depthSRV->GetResource(&depthResource);
+                Globals::context->CopyResource(REX_CAST(depthBufferShared, ID3D11Texture2D),
+                                               REX_CAST(depthResource, ID3D11Texture2D));
+            }
+        }
+
+        sl::FrameToken* frameToken = nullptr;
+        if (SL_FAILED(res, slGetNewFrameToken(frameToken, nullptr))) {
+            logger::warn("Failed to get new frame token.");
+            return;
+        }
+
+        if (SL_FAILED(res, slSetConstants(constants, *frameToken, viewport))) {
+            logger::warn("Failed to set DLSS constants.");
+            return;
+        }
+
+        const sl::BaseStructure* inputs[] = {&viewport};
+        if (SL_FAILED(res, slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), Globals::context))) {
+            logger::warn("Failed to evaluate DLSS feature: {}", static_cast<int>(res));
+            return;
+        } else {
+            logger::info("DLSS feature evaluated successfully.");
+        }
+
+        swapChainResource->Release();
+        logger::info("Frame present handled successfully.");
     }
 
 

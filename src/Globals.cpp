@@ -17,8 +17,6 @@ namespace Globals {
     REX::W32::IDXGISwapChain* swapChain = nullptr;
     // The context used by the renderer
     REX::W32::ID3D11DeviceContext* context = nullptr;
-    // Viewport
-    sl::ViewportHandle viewport {0};
 
     // Initalize all globals
     void init() {

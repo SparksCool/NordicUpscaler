@@ -26,13 +26,5 @@ namespace Globals
     inline int OutputResolutionWidth = 0;
     inline int OutputResolutionHeight = 0;
 
-    // DLSS Buffers
-    inline ID3D11Texture2D* colorBufferShared = nullptr;
-    inline ID3D11Texture2D* depthBufferShared = nullptr;
-    inline ID3D11Texture2D* motionVectorsShared = nullptr;
-    inline ID3D11Texture2D* dlssOutputBuffer = nullptr;
-    // Viewport
-    extern sl::ViewportHandle viewport;
-
     void init();
 }
