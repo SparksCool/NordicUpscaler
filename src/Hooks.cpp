@@ -35,15 +35,12 @@ namespace Hooks {
             return func(pSwapChain, SyncInterval, Flags);
         }
 
-        REX::W32::ID3D11Texture2D* backBuffer = nullptr;
-        if (SUCCEEDED(pSwapChain->GetBuffer(0, REX::W32::IID_ID3D11Texture2D, (void**)&backBuffer))) {
-
             if (Globals::DLSS_Available) {
-                Streamline::Streamline::getSingleton()->loadDlSSBuffers();
+                // Streamline::Streamline::getSingleton()->loadDlSSBuffers(); This has been moved inside the
+                // HandlePresent function
                 Streamline::Streamline::getSingleton()->updateConstants();
                 Streamline::Streamline::getSingleton()->HandlePresent();
             }
-        }
 
 
 

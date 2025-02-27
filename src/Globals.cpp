@@ -57,6 +57,7 @@ namespace Globals {
         DLSS_Available = Streamline::Streamline::getSingleton()->DLSSAvailable();
         Streamline::Streamline::getSingleton()->loadDlSSBuffers();
         Streamline::Streamline::getSingleton()->getDLSSRenderResolution();
+        Streamline::Streamline::getSingleton()->allocateBuffers();
         
         logger::info("Globals initialized.");
     }

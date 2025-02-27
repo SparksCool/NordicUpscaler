@@ -104,6 +104,14 @@ namespace Streamline {
         options.outputWidth = Globals::OutputResolutionWidth;
         options.outputHeight = Globals::OutputResolutionHeight;
 
+        // Set our settings
+        if (SL_FAILED(result, slDLSSSetOptions(viewport, options))) {
+            logger::warn("[Streamline] Failed to set DLSS options: {}", static_cast<int>(result));
+            return;
+        } else {
+            logger::info("[Streamline] Set DLSS options successfully.");
+        }
+
         sl::DLSSOptimalSettings optimalSettings{};
         if (slDLSSGetOptimalSettings(options, optimalSettings) == sl::Result::eOk) {
             Globals::RenderResolutionWidth = optimalSettings.optimalRenderWidth;
@@ -114,6 +122,83 @@ namespace Streamline {
         } else {
             logger::error("[DLSS] Failed to retrieve optimal DLSS resolution.");
         }
+    }
+
+void Streamline::allocateBuffers() {
+        logger::info("Allocating DLSS shared buffers...");
+
+        HRESULT hr = S_OK;
+
+        // --- Allocate Color Buffer ---
+        {
+            D3D11_TEXTURE2D_DESC colorDesc = {};
+            colorDesc.Width = Globals::OutputResolutionWidth;  // Use your intended render resolution
+            colorDesc.Height = Globals::OutputResolutionHeight;
+            colorDesc.MipLevels = 1;
+            colorDesc.ArraySize = 1;
+            colorDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // Common color format
+            colorDesc.SampleDesc.Count = 1;
+            colorDesc.Usage = D3D11_USAGE_DEFAULT;
+            colorDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+            colorDesc.CPUAccessFlags = 0;
+            colorDesc.MiscFlags = 0;
+
+            hr = Globals::g_D3D11Device->CreateTexture2D(REX_CAST(&colorDesc, D3D11_TEXTURE2D_DESC), nullptr,
+                                                         REX_CAST(&colorBufferShared, ID3D11Texture2D*));
+            if (FAILED(hr)) {
+                logger::error("Failed to create color buffer. HRESULT: {0}", hr);
+            } else {
+                logger::info("Color buffer created: {}x{}", colorDesc.Width, colorDesc.Height);
+            }
+        }
+
+        // --- Allocate Depth Buffer ---
+        {
+            D3D11_TEXTURE2D_DESC depthDesc = {};
+            depthDesc.Width = Globals::OutputResolutionWidth;
+            depthDesc.Height = Globals::OutputResolutionHeight;
+            depthDesc.MipLevels = 1;
+            depthDesc.ArraySize = 1;
+            depthDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;  // Typeless for flexibility with depth/stencil views
+            depthDesc.SampleDesc.Count = 1;
+            depthDesc.Usage = D3D11_USAGE_DEFAULT;
+            depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+            depthDesc.CPUAccessFlags = 0;
+            depthDesc.MiscFlags = 0;
+
+            hr = Globals::g_D3D11Device->CreateTexture2D(REX_CAST(&depthDesc, D3D11_TEXTURE2D_DESC), nullptr,
+                                                         REX_CAST(&depthBufferShared, ID3D11Texture2D*));
+            if (FAILED(hr)) {
+                logger::error("Failed to create depth buffer. HRESULT: {0}", hr);
+            } else {
+                logger::info("Depth buffer created: {}x{}", depthDesc.Width, depthDesc.Height);
+            }
+        }
+
+        // --- Allocate Motion Vectors Buffer ---
+        {
+            D3D11_TEXTURE2D_DESC motionDesc = {};
+            motionDesc.Width = Globals::OutputResolutionWidth;
+            motionDesc.Height = Globals::OutputResolutionHeight;
+            motionDesc.MipLevels = 1;
+            motionDesc.ArraySize = 1;
+            motionDesc.Format = DXGI_FORMAT_R16G16_FLOAT;  // Common format for motion vectors
+            motionDesc.SampleDesc.Count = 1;
+            motionDesc.Usage = D3D11_USAGE_DEFAULT;
+            motionDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+            motionDesc.CPUAccessFlags = 0;
+            motionDesc.MiscFlags = 0;
+
+            hr = Globals::g_D3D11Device->CreateTexture2D(REX_CAST(&motionDesc, D3D11_TEXTURE2D_DESC), nullptr,
+                                                         REX_CAST(&motionVectorsShared, ID3D11Texture2D*));
+            if (FAILED(hr)) {
+                logger::error("Failed to create motion vectors buffer. HRESULT: {0}", hr);
+            } else {
+                logger::info("Motion vectors buffer created: {}x{}", motionDesc.Width, motionDesc.Height);
+            }
+        }
+
+        logger::info("All DLSS shared buffers allocated successfully.");
     }
 
     void Streamline::loadDlSSBuffers() {
@@ -139,6 +224,16 @@ namespace Streamline {
         sl::ResourceTag outputBufferTag = sl::ResourceTag{&colorOut, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
 
         sl::ResourceTag inputs[] = {colorInTag, outputBufferTag, depthInTag, motionVectorsInTag};
+
+        if (!colorBufferShared) {
+            logger::error("[Streamline] colorBufferShared is null before tagging!");
+        }
+        if (!depthBufferShared) {
+            logger::error("[Streamline] depthBufferShared is null before tagging!");
+        }
+        if (!motionVectorsShared) {
+            logger::error("[Streamline] motionVectorsShared is null before tagging!");
+        }
 
         if (SL_FAILED(res, slSetTag(view, inputs, _countof(inputs), Globals::context))) {
             logger::warn("[Streamline] Failed to set tags: {}", static_cast<int>(res));
@@ -214,6 +309,12 @@ namespace Streamline {
             return;
         }
 
+        ID3D11RenderTargetView* backupViews[8];
+        ID3D11DepthStencilView* backupDsv;
+        Globals::context->OMGetRenderTargets(8, REX_CAST(backupViews, ID3D11RenderTargetView*), REX_CAST(&backupDsv, ID3D11DepthStencilView*));  // Backup bound render targets
+        Globals::context->OMSetRenderTargets(0, nullptr, nullptr);         // Unbind all bound render targets
+
+
         // Retrieve game buffers
         auto& swapChain = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
         auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
@@ -253,12 +354,20 @@ namespace Streamline {
                 logger::warn("Failed to create dummy depth SRV.");
                 // Log error
                 logger::warn("Error code: {}", hr);
+                depthTexture->Release();
                 return;
             }
 
             depth.depthSRV = dummyDepthSRV;
+            depthTexture->Release();
 
 
+        }
+
+         // Ensure all resources are available before continuing
+        if (!swapChain.SRV || !motionVectors.SRV || !depth.depthSRV) {
+            logger::warn("Required buffers (swap chain, motion vectors, depth) are missing.");
+            return;
         }
 
         if (!swapChain.SRV) {
@@ -304,6 +413,23 @@ namespace Streamline {
             }
         }
 
+        // Restore render targets
+      
+        Globals::context->OMSetRenderTargets(8, REX_CAST(backupViews, ID3D11RenderTargetView*), REX_CAST(backupDsv, ID3D11DepthStencilView));
+
+
+        // Load shared buffers
+        loadDlSSBuffers();
+
+        // Return if all resources are not available
+        if (!colorBufferShared && !depthBufferShared && !motionVectorsShared) {
+            logger::warn("All buffers are missing.");
+            swapChainResource->Release();
+            return;
+        }
+
+
+
         sl::FrameToken* frameToken = nullptr;
         if (SL_FAILED(res, slGetNewFrameToken(frameToken, nullptr))) {
             logger::warn("Failed to get new frame token.");
@@ -318,6 +444,7 @@ namespace Streamline {
         const sl::BaseStructure* inputs[] = {&viewport};
         if (SL_FAILED(res, slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), Globals::context))) {
             logger::warn("Failed to evaluate DLSS feature: {}", static_cast<int>(res));
+            swapChainResource->Release();
             return;
         } else {
             logger::info("DLSS feature evaluated successfully.");

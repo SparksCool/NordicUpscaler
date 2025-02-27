@@ -31,5 +31,6 @@ namespace Streamline {
         void loadDlSSBuffers();
         void updateConstants();
         void HandlePresent();
+        void allocateBuffers();
     };
 }
