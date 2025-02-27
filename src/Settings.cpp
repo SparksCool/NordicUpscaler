@@ -16,6 +16,7 @@ namespace Settings {
             ini.LoadFile(settingsPath);
 
             Plugin_Enabled = ini.GetBoolValue(L"General", L"Plugin_Enabled");
+            Selected_Preset_DLSS = ini.GetLongValue(L"General", L"Selected_Preset_DLSS");
         }
     }
 

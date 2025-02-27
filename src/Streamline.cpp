@@ -7,9 +7,9 @@
 #include <sl.h>
 #include <sl_consts.h>
 #include <sl_core_api.h>
-
 #include <sl_dlss.h>
 #include <sl_result.h>
+#include <Settings.h>
 
 namespace Streamline {
     void Streamline::loadInterposer() {
@@ -18,14 +18,18 @@ namespace Streamline {
     }
 
     bool Streamline::initSL() {
-        // Set D3D11 device to the one actually being used by the game renderer 
-        slSetD3DDevice(Globals::g_D3D11Device);
 
         sl::Preferences pref{};
 
         static const sl::Feature features[] = {sl::kFeatureDLSS};
         pref.featuresToLoad = features;
         pref.numFeaturesToLoad = sizeof(features) / sizeof(sl::Feature);
+
+        // Need to set these otherwise we cannot use DLSS features
+        pref.engine = sl::EngineType::eCustom;
+        pref.engineVersion = "1.0.0";
+        pref.renderAPI = sl::RenderAPI::eD3D11;
+        pref.projectId = "e2bf2b68-3fb3-4393-9f62-3b1239a8128e";
 
 #ifndef NDEBUG
         // Only enabling during debug, otherwise it might cause a lot of spam in NordicUpscaler.log + the DLSS console
@@ -40,6 +44,11 @@ namespace Streamline {
         // This helps to debug, cross reference results with the result enum contained in sl_result.h
         // more descriptive messages might be added in the future
         logger::info("[Streamline] Streamline start attempted with result: {}", static_cast<int>(result));
+
+        // Set D3D device to the one actually being used by the game renderer
+        sl::Result dev_result = slSetD3DDevice(Globals::g_D3D11Device);
+
+        logger::info("[Streamline] Set D3D11 device with result: {}", static_cast<int>(dev_result));
 
         return result == sl::Result::eOk;
     }
@@ -82,4 +91,25 @@ namespace Streamline {
 
         return false;
     }
+
+    // This function is called to get the optimal render resolution for DLSS
+    void Streamline::getDLSSRenderResolution() { 
+        sl::DLSSOptions options{};
+        options.mode = static_cast<sl::DLSSMode>(Settings::Selected_Preset_DLSS);
+        options.outputWidth = Globals::OutputResolutionWidth;
+        options.outputHeight = Globals::OutputResolutionHeight;
+
+        sl::DLSSOptimalSettings optimalSettings{};
+        if (slDLSSGetOptimalSettings(options, optimalSettings) == sl::Result::eOk) {
+            Globals::RenderResolutionWidth = optimalSettings.optimalRenderWidth;
+            Globals::RenderResolutionHeight = optimalSettings.optimalRenderHeight;
+
+            logger::info("[DLSS] Set global render resolution to {}x{}", Globals::RenderResolutionHeight,
+                         Globals::RenderResolutionWidth);
+        } else {
+            logger::error("[DLSS] Failed to retrieve optimal DLSS resolution.");
+        }
+    }
+
+    
 }

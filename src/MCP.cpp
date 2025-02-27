@@ -36,15 +36,15 @@ namespace MCP {
 
         ImGui::Checkbox("Plugin Enabled", &Settings::Plugin_Enabled);
 
-        ImGui::Combo("DLSS Preset", &Settings::Selected_Preset_DLSS, Settings::DLSS_Presets,
-                     IM_ARRAYSIZE(Settings::DLSS_Presets));
+        ImGui::Combo("DLSS Preset", &Settings::Selected_Preset_DLSS, Settings::DLSS_Presets, IM_ARRAYSIZE(Settings::DLSS_Presets));
 
     }
 
     void _stdcall RenderDebugInfo() {
         ImGui::Text("Nordic Upscaler Debug Info");
         ImGui::Text("Current Resolution: %dx%d", Globals::renderer->GetScreenSize().width, Globals::renderer->GetScreenSize().height);
-        // TODO(SparksCool): Display render resolution and the output resolution, upscaled by DLSS
+        ImGui::Text("Render Resolution: %dx%d", Globals::RenderResolutionWidth, Globals::RenderResolutionHeight);
+        ImGui::Text("Output Resolution: %dx%d", Globals::OutputResolutionWidth, Globals::OutputResolutionHeight);
 
 
         if (Globals::Streamline_Init) {

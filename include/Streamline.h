@@ -16,7 +16,11 @@ namespace Streamline {
         }
 
         void loadInterposer();
+
         bool initSL();
         bool DLSSAvailable();
+
+        void getDLSSRenderResolution();
+        void updateDLSSSettings();
     };
 }

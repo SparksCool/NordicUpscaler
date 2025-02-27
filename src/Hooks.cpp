@@ -42,6 +42,6 @@ namespace Hooks {
     }
 
     void Install() {
-        HkDX11PresentSwapChain::InstallHook(); 
+        HkDX11PresentSwapChain::InstallHook();
     }
 }

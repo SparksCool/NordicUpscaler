@@ -11,9 +11,9 @@
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         // Start
+        Settings::LoadSettings();
         Globals::init();
         Hooks::Install();
-        Settings::LoadSettings();
         MCP::Register();
     }
     if (message->type == SKSE::MessagingInterface::kNewGame || message->type == SKSE::MessagingInterface::kPostLoadGame) {

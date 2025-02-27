@@ -12,4 +12,5 @@ namespace Hooks {
         static HRESULT WINAPI thunk(REX::W32::IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
         static inline decltype(&thunk) func;
     };
+
 }

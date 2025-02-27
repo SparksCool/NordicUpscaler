@@ -16,7 +16,7 @@ namespace Settings {
     void ResetSettings();
 
     inline bool Plugin_Enabled = true;
-    inline int Selected_Preset_DLSS = 0;
-    inline const char* DLSS_Presets[] = {"Performance", "Balanced", "Quality", "Ultra Performance", "Ultra Quality"};
+    inline int Selected_Preset_DLSS = 2;
+    inline const char* DLSS_Presets[] = {"Off", "Performance", "Balanced", "Quality", "Ultra Performance", "Ultra Quality"};
 
 }
