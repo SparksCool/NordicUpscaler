@@ -18,7 +18,7 @@ namespace Streamline {
     }
 
     bool Streamline::initSL() {
-        // Set D3D11 device
+        // Set D3D11 device to the one actually being used by the game renderer 
         slSetD3DDevice(Globals::g_D3D11Device);
 
         sl::Preferences pref{};
@@ -28,6 +28,8 @@ namespace Streamline {
         pref.numFeaturesToLoad = sizeof(features) / sizeof(sl::Feature);
 
 #ifndef NDEBUG
+        // Only enabling during debug, otherwise it might cause a lot of spam in NordicUpscaler.log + the DLSS console
+        // is annoying for end users
         pref.showConsole = true;
         pref.logLevel = sl::LogLevel::eVerbose;
         pref.logMessageCallback = [](sl::LogType type, const char* msg) { logger::info("[Streamline] {}", msg); };
@@ -43,7 +45,9 @@ namespace Streamline {
     }
 
     /* Primarily referenced from https://github.com/NVIDIAGameWorks/Streamline/blob/main/docs/ProgrammingGuideDLSS.md
-     * part 2.0*/
+     * part 2.0
+     * This might need to be reworked as this cycles through ALL adapters while we should really only have it use Globals::g_D3D11Device
+     * Otherwise we could face issues where theres two adapters e.g an iGPU and a dGPU, SLI too but its kind of extinct in this day */
     bool Streamline::DLSSAvailable() {
         Microsoft::WRL::ComPtr<REX::W32::IDXGIFactory> factory;
 

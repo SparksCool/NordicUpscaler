@@ -6,7 +6,8 @@
 namespace Globals
 {
     extern RE::BSGraphics::Renderer* renderer;
-    extern REX::W32::ID3D11Device* g_D3D11Device;  // Added type specifier and extern keyword
+    extern REX::W32::ID3D11Device* g_D3D11Device;  
+    extern REX::W32::IDXGISwapChain* swapChain;
 
     inline bool Streamline_Init = false;
     inline bool DLSS_Available = false;

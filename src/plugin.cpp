@@ -6,10 +6,13 @@
 #include <Settings.h>
 #include <Utils.h>
 #include <Globals.h>
+#include <Hooks.h>
 
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         // Start
+        Globals::init();
+        Hooks::Install();
         Settings::LoadSettings();
         MCP::Register();
     }
@@ -24,7 +27,5 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
     logger::info("Game version: {}", skse->RuntimeVersion().string());
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
-
-    Globals::init();
     return true;
 }
