@@ -21,6 +21,7 @@ namespace Streamline {
         bool DLSSAvailable();
 
         void getDLSSRenderResolution();
-        void updateDLSSSettings();
+        void loadDlSSBuffers();
+        void updateConstants();
     };
 }

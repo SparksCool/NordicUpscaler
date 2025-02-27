@@ -4,27 +4,34 @@
 #include <Globals.h>
 #include <Utils.h>
 #include <Streamline.h>
+#include <sl.h>
 
 namespace Globals {
     // The skyrim renderer 
     RE::BSGraphics::Renderer* renderer = nullptr;
     // The Skyrim Graphics State
-    RE::BSGraphics::State* state = nullptr;
+    RE::BSGraphics::State* graphicsState = nullptr;
     // The D3D11 device used by the renderer AKA our GPU
     REX::W32::ID3D11Device* g_D3D11Device = nullptr;
     // The swap chain used by the renderer
     REX::W32::IDXGISwapChain* swapChain = nullptr;
+    // The context used by the renderer
+    REX::W32::ID3D11DeviceContext* context = nullptr;
+    // Viewport
+    sl::ViewportHandle viewport {0};
 
     // Initalize all globals
     void init() {
         renderer = RE::BSGraphics::Renderer::GetSingleton(); 
         logger::info("Renderer load attempted");
-        state = RE::BSGraphics::State::GetSingleton();
+        graphicsState = RE::BSGraphics::State::GetSingleton();
         logger::info("State load attempted");
         g_D3D11Device = renderer->GetDevice();
         logger::info("D3D11 Device load attempted");
         swapChain = renderer->GetCurrentRenderWindow()->swapChain;
         logger::info("Swap Chain: load attempted");
+        context = renderer->GetRendererData()->context;
+        logger::info("Context load attempted");
 
         // Null checks
 
@@ -50,21 +57,9 @@ namespace Globals {
         Streamline::Streamline::getSingleton()->loadInterposer();
         Streamline_Init = Streamline::Streamline::getSingleton()->initSL();
         DLSS_Available = Streamline::Streamline::getSingleton()->DLSSAvailable();
+        Streamline::Streamline::getSingleton()->loadDlSSBuffers();
         Streamline::Streamline::getSingleton()->getDLSSRenderResolution();
-
-        REX::W32::D3D11_VIEWPORT viewport = {};
-        viewport.width = static_cast<float>(OutputResolutionWidth);
-        viewport.height = static_cast<float>(OutputResolutionHeight);
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        viewport.topLeftX = 0.0f;
-        viewport.topLeftY = 0.0f;
-
-        state->screenWidth = OutputResolutionWidth;
-        state->screenHeight = OutputResolutionHeight;
-        state->frameBufferViewport[0] = OutputResolutionWidth;
-        state->frameBufferViewport[1] = OutputResolutionHeight;
-
+        
         logger::info("Globals initialized.");
     }
 }

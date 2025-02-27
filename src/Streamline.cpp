@@ -111,5 +111,35 @@ namespace Streamline {
         }
     }
 
+    void Streamline::loadDlSSBuffers() {
+        // Setup viewport
+        sl::ViewportHandle view{Globals::viewport};
+
+        // Create shared buffers
+        sl::Resource colorIn = {sl::ResourceType::eTex2d, Globals::colorBufferShared, 0};
+
+        sl::Resource depthIn = {sl::ResourceType::eTex2d, Globals::depthBufferShared, 0};
+
+        sl::Resource motionVectorsIn = {sl::ResourceType::eTex2d, Globals::motionVectorsShared, 0};
+
+        sl::Resource outputBuffer = {sl::ResourceType::eTex2d, Globals::dlssOutputBuffer, 0};
+
+        sl::Extent fullExtent{0, 0, (UINT)Globals::renderer->GetScreenSize().width,
+                              (UINT)Globals::renderer->GetScreenSize().height};
+ 
+        // Tagging resources
+        sl::ResourceTag colorInTag = sl::ResourceTag {&colorIn, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
+        sl::ResourceTag depthInTag = sl::ResourceTag{&depthIn, sl::kBufferTypeDepth, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
+        sl::ResourceTag motionVectorsInTag = sl::ResourceTag{&motionVectorsIn, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
+        sl::ResourceTag outputBufferTag = sl::ResourceTag{&outputBuffer, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
+
+        sl::ResourceTag inputs[] = {colorInTag, outputBufferTag, depthInTag, motionVectorsInTag};
+
+        if (SL_FAILED(res, slSetTag(view, inputs, _countof(inputs), Globals::context))) {
+            logger::warn("[Streamline] Failed to set tags: {}", static_cast<int>(res));
+        }
+    }
+
+
     
 }
