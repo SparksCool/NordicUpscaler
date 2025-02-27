@@ -11,6 +11,7 @@ namespace Globals
 
     inline bool Streamline_Init = false;
     inline bool DLSS_Available = false;
+    inline bool SwapChain_Hooked = false;
 
     void init();
 }

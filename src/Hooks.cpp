@@ -1,7 +1,8 @@
-#include "Hooks.h"
-#include "Globals.h"
 // Copyright (c) 2025 SparksCool
 // Licensed under the MIT license.
+
+#include "Hooks.h"
+#include "Globals.h"
 
 namespace Hooks {
     // Hooks into the DirectX 11 swap chain's Present function to intercept frame rendering
@@ -10,6 +11,8 @@ namespace Hooks {
             logger::warn("Swap chain not found, skipping hook installation.");
             return;
         }
+
+        Globals::SwapChain_Hooked = true;
 
         void** vtable = *reinterpret_cast<void***>(Globals::swapChain);  // Get the vtable of the swap chain
         func = reinterpret_cast<decltype(func)>(vtable[8]);  // Present is the 8th function in the swap chain's vtable
@@ -23,7 +26,19 @@ namespace Hooks {
 
     HRESULT WINAPI HkDX11PresentSwapChain::thunk(REX::W32::IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
 
-        return func(pSwapChain, SyncInterval, Flags);  // Call the original Present function
+        if (!pSwapChain) {
+            logger::warn("Swap chain not found, skipping hook.");
+            return func(pSwapChain, SyncInterval, Flags);
+        }
+
+        ID3D11Texture2D* backBuffer = nullptr;
+        if (SUCCEEDED(pSwapChain->GetBuffer(0, REX::W32::IID_ID3D11Texture2D, (void**)&backBuffer))) {
+
+        }
+
+
+        // Call original function, otherwise game will cease rendering and effectively freeze
+        return func(pSwapChain, SyncInterval, Flags);
     }
 
     void Install() {

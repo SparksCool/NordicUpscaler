@@ -44,6 +44,7 @@ namespace MCP {
     void _stdcall RenderDebugInfo() {
         ImGui::Text("Nordic Upscaler Debug Info");
         ImGui::Text("Current Resolution: %dx%d", Globals::renderer->GetScreenSize().width, Globals::renderer->GetScreenSize().height);
+        // TODO(SparksCool): Display render resolution and the output resolution, upscaled by DLSS
 
 
         if (Globals::Streamline_Init) {
@@ -53,9 +54,16 @@ namespace MCP {
         }
 
         if (Globals::DLSS_Available) {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "DLSS Available: True");
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "DLSS Capable: True");
         } else {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "DLSS Available: False");
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "DLSS Capable: False");
+        }
+
+        if (Globals::SwapChain_Hooked) {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "DirectX Swap Chain Hooked: True");
+            ImGui::Text("Swap Chain Memory Address: %p", Globals::swapChain);
+        } else {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "DirectX Swap Chain Hooked: False");
         }
     }
 }
