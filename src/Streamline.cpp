@@ -41,7 +41,7 @@ namespace Streamline {
         // is annoying for end users
         pref.showConsole = true;
         pref.logLevel = sl::LogLevel::eVerbose;
-        pref.logMessageCallback = [](sl::LogType type, const char* msg) { logger::info("[Streamline] {}", msg); };
+        pref.logMessageCallback = [](sl::LogType type, const char* msg) { logger::info("{}", msg); };
 #endif
 
         sl::Result result = slInit(pref);
@@ -108,6 +108,11 @@ namespace Streamline {
         options.mode = static_cast<sl::DLSSMode>(Settings::Selected_Preset_DLSS);
         options.outputWidth = Globals::OutputResolutionWidth;
         options.outputHeight = Globals::OutputResolutionHeight;
+        slSetFeatureLoaded(sl::kFeatureImGUI, false);
+
+        if (SL_FAILED(res, slSetFeatureLoaded(sl::kFeatureImGUI, true))) {
+            logger::warn("[Streamline] Failed to set ImGui feature loaded: {}", static_cast<int>(res));
+        }
 
         // Set our settings
         if (SL_FAILED(result, slDLSSSetOptions(viewport, options))) {
@@ -296,6 +301,11 @@ void Streamline::allocateBuffers() {
 
     void Streamline::HandlePresent() {
         logger::info("Handling frame present...");
+
+        if (!Settings::Plugin_Enabled) {
+            logger::info("Plugin is disabled. Skipping frame processing.");
+            return;
+        }
 
 
         if (!Globals::DLSS_Available) {

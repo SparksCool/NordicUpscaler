@@ -48,7 +48,23 @@ namespace Hooks {
         return func(pSwapChain, SyncInterval, Flags);
     }
 
+    void HkDRS::thunk(RE::BSGraphics::State* a_state) {
+        // Set Dynamic Resolution ratios to be the same as the render resolution
+        a_state->dynamicResolutionHeightRatio = Globals::getScaleFactor();
+        a_state->dynamicResolutionWidthRatio = Globals::getScaleFactor();
+        logger::info("Dynamic Resolution Ratios set to: {}", Globals::getScaleFactor());
+    }
+    void HkDRS::InstallHook() {
+        SKSE::AllocTrampoline(14);
+
+        auto& trampoline = SKSE::GetTrampoline();
+        trampoline.write_call<5>(REL::RelocationID(35556, 36555).address() + REL::Relocate(0x2D, 0x2D, 0x25), thunk);
+
+        Globals::DRS_Active = true;
+    }
+
     void Install() {
         HkDX11PresentSwapChain::InstallHook();
+        HkDRS::InstallHook();
     }
 }

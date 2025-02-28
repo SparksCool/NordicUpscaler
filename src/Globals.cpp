@@ -5,6 +5,7 @@
 #include <Utils.h>
 #include <Streamline.h>
 #include <sl.h>
+#include <SimpleIni.h>
 
 namespace Globals {
     // The skyrim renderer 
@@ -65,7 +66,24 @@ namespace Globals {
         Streamline::Streamline::getSingleton()->loadDlSSBuffers();
         Streamline::Streamline::getSingleton()->getDLSSRenderResolution();
         Streamline::Streamline::getSingleton()->allocateBuffers();
+       
+
+        // Force Dynamic Resolution On | This is taken from Doodlums Dynamic Resolution mod
+        auto bEnableAutoDynamicResolution = RE::GetINISetting("bEnableAutoDynamicResolution:Display");
+        if (!REL::Module::IsVR()) {
+            if (bEnableAutoDynamicResolution) {
+                if (!bEnableAutoDynamicResolution->GetBool()) logger::info("Forcing DynamicResolution on.");
+                bEnableAutoDynamicResolution->data.b = true;
+            } else
+                logger::warn("Unable to enable Dynamic Resolution, please enable manually.");
+        }
         
+
         logger::info("Globals initialized.");
+    }
+
+    // Get the scale factor
+    float getScaleFactor() {
+        return static_cast<float>(Globals::RenderResolutionWidth) / static_cast<float>(Globals::OutputResolutionWidth); 
     }
 }

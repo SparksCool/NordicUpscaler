@@ -13,4 +13,10 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
+    struct HkDRS {
+        static void thunk(RE::BSGraphics::State* a_state);
+        static inline decltype(&thunk) func;
+        static void InstallHook();
+    };
+
 }

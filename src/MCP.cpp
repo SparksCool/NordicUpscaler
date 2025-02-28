@@ -65,5 +65,9 @@ namespace MCP {
         } else {
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "DirectX Swap Chain Hooked: False");
         }
+
+        ImGui::Text("Scale Factor: %f", Globals::getScaleFactor());
+        ImGui::Text("DRS Active: %s", Globals::DRS_Active ? "True" : "False");
+
     }
 }

@@ -15,10 +15,9 @@ void OnMessage(SKSE::MessagingInterface::Message* message) {
         Hooks::Install();
         MCP::Register();
     }
-    if (message->type == SKSE::MessagingInterface::kPostLoad) {
-        // Post-load of the game, but before the main menu
-    }
-    if (message->type == SKSE::MessagingInterface::kNewGame || message->type == SKSE::MessagingInterface::kPostLoadGame) {
+    if (message->type == SKSE::MessagingInterface::kNewGame ||
+        message->type == SKSE::MessagingInterface::kPostLoadGame ||
+        message->type == SKSE::MessagingInterface::kPostLoad) {
         // Post-load
     }
 }

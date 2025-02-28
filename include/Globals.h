@@ -18,6 +18,7 @@ namespace Globals
     inline bool Streamline_Init = false;
     inline bool DLSS_Available = false;
     inline bool SwapChain_Hooked = false;
+    inline bool DRS_Active = false;
 
     // These are the resolutions that the game is rendering at
     inline int RenderResolutionWidth = 0;
@@ -26,6 +27,12 @@ namespace Globals
     inline int OutputResolutionWidth = 0;
     inline int OutputResolutionHeight = 0;
 
+    // SSE Display Tweaks ini paths
+    inline const char* displayTweaksIni{"Data/SKSE/Plugins/SSEDisplayTweaks.ini"};
+    inline const char* customDisplayTweaksIni{"Data/SKSE/Plugins/SSEDisplayTweaks_custom.ini"};
+
+
     void earlyInit();
     void fullInit();
+    float getScaleFactor();
 }

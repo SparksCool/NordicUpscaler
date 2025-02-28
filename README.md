@@ -3,6 +3,8 @@ A SKSE Plugin for upscaling Skyrim with DLSS and later other methods, designed t
 
 # Build Info
 
+To make use of Dynamic Resolution the RE/S/State.h from CommonLibSSE-NG is replaced with the one from powerof3/CommonLibSSE, otherwise dynamic resolution will not work for DLSS.
+
 ## Environment Variables
 - COMMONLIB_SSE_FOLDER: The path to your clone of Commonlib.
 - VCPKG_ROOT: The path to your clone of vcpkg.
