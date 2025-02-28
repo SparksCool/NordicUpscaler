@@ -12,11 +12,12 @@ namespace Streamline {
         sl::Constants constants;
         sl::ViewportHandle viewport{0};
         bool dlssInitialized = false;
+
+    public:
         ID3D11Texture2D* colorBufferShared = nullptr;
         ID3D11Texture2D* motionVectorsShared = nullptr;
         ID3D11Texture2D* depthBufferShared = nullptr;
 
-    public:
         static Streamline* getSingleton() {
             static Streamline singleton;
             return &singleton;

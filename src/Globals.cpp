@@ -18,18 +18,27 @@ namespace Globals {
     // The context used by the renderer
     REX::W32::ID3D11DeviceContext* context = nullptr;
 
-    // Initalize all globals
-    void init() {
-        renderer = RE::BSGraphics::Renderer::GetSingleton(); 
+    // Called before the game is fully loaded
+    void earlyInit() {
+        renderer = RE::BSGraphics::Renderer::GetSingleton();
         logger::info("Renderer load attempted");
         graphicsState = RE::BSGraphics::State::GetSingleton();
         logger::info("State load attempted");
-        g_D3D11Device = renderer->GetDevice();
-        logger::info("D3D11 Device load attempted");
+
+        // Init Streamline
+        Streamline::Streamline::getSingleton()->loadInterposer();
+        Streamline_Init = Streamline::Streamline::getSingleton()->initSL();
+
+    }
+
+    // This is called after the game is fully loaded, attempting earlier will result in a crash
+    void fullInit() {
         swapChain = renderer->GetCurrentRenderWindow()->swapChain;
         logger::info("Swap Chain: load attempted");
         context = renderer->GetRendererData()->context;
         logger::info("Context load attempted");
+        g_D3D11Device = renderer->GetDevice();
+        logger::info("D3D11 Device load attempted");
 
         // Null checks
 
@@ -52,8 +61,6 @@ namespace Globals {
         OutputResolutionHeight = renderer->GetScreenSize().height;
 
         /* Initialize Streamline then check if DLSS is available */
-        Streamline::Streamline::getSingleton()->loadInterposer();
-        Streamline_Init = Streamline::Streamline::getSingleton()->initSL();
         DLSS_Available = Streamline::Streamline::getSingleton()->DLSSAvailable();
         Streamline::Streamline::getSingleton()->loadDlSSBuffers();
         Streamline::Streamline::getSingleton()->getDLSSRenderResolution();

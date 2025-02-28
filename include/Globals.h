@@ -26,5 +26,6 @@ namespace Globals
     inline int OutputResolutionWidth = 0;
     inline int OutputResolutionHeight = 0;
 
-    void init();
+    void earlyInit();
+    void fullInit();
 }

@@ -26,7 +26,7 @@ namespace Streamline {
 
         sl::Preferences pref{};
 
-        static const sl::Feature features[] = {sl::kFeatureDLSS};
+        static const sl::Feature features[] = {sl::kFeatureDLSS, sl::kFeatureImGUI};
         pref.featuresToLoad = features;
         pref.numFeaturesToLoad = sizeof(features) / sizeof(sl::Feature);
 
@@ -51,9 +51,10 @@ namespace Streamline {
         logger::info("[Streamline] Streamline start attempted with result: {}", static_cast<int>(result));
 
         // Set D3D device to the one actually being used by the game renderer
-        sl::Result dev_result = slSetD3DDevice(Globals::g_D3D11Device);
+        //Globals::g_D3D11Device = RE::BSGraphics::Renderer::GetSingleton()->GetDevice();
+        //sl::Result dev_result = slSetD3DDevice(Globals::g_D3D11Device);
 
-        logger::info("[Streamline] Set D3D11 device with result: {}", static_cast<int>(dev_result));
+        //logger::info("[Streamline] Set D3D11 device with result: {}", static_cast<int>(dev_result));
 
         return result == sl::Result::eOk;
     }
@@ -63,6 +64,10 @@ namespace Streamline {
      * This might need to be reworked as this cycles through ALL adapters while we should really only have it use Globals::g_D3D11Device
      * Otherwise we could face issues where theres two adapters e.g an iGPU and a dGPU, SLI too but its kind of extinct in this day */
     bool Streamline::DLSSAvailable() {
+
+        logger::info("Setting Streamline Device");
+        slSetD3DDevice(Globals::g_D3D11Device);
+
         Microsoft::WRL::ComPtr<REX::W32::IDXGIFactory> factory;
 
         if (FAILED(CreateDXGIFactory(REX::W32::IID_IDXGIFactory, (void**)&factory))) {
@@ -442,7 +447,7 @@ void Streamline::allocateBuffers() {
         }
 
         const sl::BaseStructure* inputs[] = {&viewport};
-        if (SL_FAILED(res, slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), Globals::context))) {
+       if (SL_FAILED(res, slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), Globals::context))) {
             logger::warn("Failed to evaluate DLSS feature: {}", static_cast<int>(res));
             swapChainResource->Release();
             return;

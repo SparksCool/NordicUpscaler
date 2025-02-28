@@ -11,10 +11,12 @@
 void OnMessage(SKSE::MessagingInterface::Message* message) {
     if (message->type == SKSE::MessagingInterface::kDataLoaded) {
         // Start
-        Settings::LoadSettings();
-        Globals::init();
+        Globals::fullInit();
         Hooks::Install();
         MCP::Register();
+    }
+    if (message->type == SKSE::MessagingInterface::kPostLoad) {
+        // Post-load of the game, but before the main menu
     }
     if (message->type == SKSE::MessagingInterface::kNewGame || message->type == SKSE::MessagingInterface::kPostLoadGame) {
         // Post-load
@@ -27,5 +29,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
     logger::info("Game version: {}", skse->RuntimeVersion().string());
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
+    Settings::LoadSettings();
+    Globals::earlyInit();
     return true;
 }
