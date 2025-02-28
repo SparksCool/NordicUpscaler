@@ -33,5 +33,6 @@ namespace Streamline {
         void updateConstants();
         void HandlePresent();
         void allocateBuffers();
+        void updateBuffers();
     };
 }

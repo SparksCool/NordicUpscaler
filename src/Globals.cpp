@@ -80,6 +80,8 @@ namespace Globals {
         
 
         logger::info("Globals initialized.");
+
+        
     }
 
     // Get the scale factor

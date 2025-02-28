@@ -134,7 +134,7 @@ namespace Streamline {
         }
     }
 
-void Streamline::allocateBuffers() {
+    void Streamline::allocateBuffers() {
         logger::info("Allocating DLSS shared buffers...");
 
         HRESULT hr = S_OK;
@@ -142,11 +142,11 @@ void Streamline::allocateBuffers() {
         // --- Allocate Color Buffer ---
         {
             D3D11_TEXTURE2D_DESC colorDesc = {};
-            colorDesc.Width = Globals::OutputResolutionWidth;  // Use your intended render resolution
-            colorDesc.Height = Globals::OutputResolutionHeight;
+            colorDesc.Width = Globals::RenderResolutionWidth;  
+            colorDesc.Height = Globals::RenderResolutionHeight;
             colorDesc.MipLevels = 1;
             colorDesc.ArraySize = 1;
-            colorDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // Common color format
+            colorDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; 
             colorDesc.SampleDesc.Count = 1;
             colorDesc.Usage = D3D11_USAGE_DEFAULT;
             colorDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -169,7 +169,7 @@ void Streamline::allocateBuffers() {
             depthDesc.Height = Globals::OutputResolutionHeight;
             depthDesc.MipLevels = 1;
             depthDesc.ArraySize = 1;
-            depthDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;  // Typeless for flexibility with depth/stencil views
+            depthDesc.Format = DXGI_FORMAT_R24G8_TYPELESS; 
             depthDesc.SampleDesc.Count = 1;
             depthDesc.Usage = D3D11_USAGE_DEFAULT;
             depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
@@ -192,7 +192,7 @@ void Streamline::allocateBuffers() {
             motionDesc.Height = Globals::OutputResolutionHeight;
             motionDesc.MipLevels = 1;
             motionDesc.ArraySize = 1;
-            motionDesc.Format = DXGI_FORMAT_R16G16_FLOAT;  // Common format for motion vectors
+            motionDesc.Format = DXGI_FORMAT_R16G16_FLOAT;
             motionDesc.SampleDesc.Count = 1;
             motionDesc.Usage = D3D11_USAGE_DEFAULT;
             motionDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -487,6 +487,14 @@ void Streamline::allocateBuffers() {
             colorBufferShared->Release();
         }
         logger::info("Frame present handled successfully.");
+    }
+
+    void Streamline::updateBuffers() { 
+        auto renderer = Globals::renderer;
+        auto context = UNREX_CAST(Globals::context, ID3D11DeviceContext);
+
+        
+       
     }
 
 
