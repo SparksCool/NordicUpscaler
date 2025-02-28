@@ -309,20 +309,9 @@ void Streamline::allocateBuffers() {
             return;
         }
 
-        logger::info("backupViews init");
-        ID3D11RenderTargetView* backupViews[8];
-        ID3D11DepthStencilView* backupDsv;
-        logger::info("backupViews init done");
-        Globals::context->OMGetRenderTargets(8, REX_CAST(backupViews, ID3D11RenderTargetView*), REX_CAST(&backupDsv, ID3D11DepthStencilView*));  // Backup bound render targets
-        Globals::context->OMSetRenderTargets(0, nullptr, nullptr);         // Unbind all bound render targets
-        logger::info("OSMRenderTargets done");
-
         // Retrieve game buffers
-        logger::info("swapChain");
         auto& swapChain = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
-        logger::info("motionVectors");
         auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
-        logger::info("depth");
         RE::BSGraphics::DepthStencilData depth{};
         //= renderer->GetRendererData()->depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 
@@ -398,6 +387,9 @@ void Streamline::allocateBuffers() {
             motionVectors.SRV->GetResource(&motionVectorsResource);
             Globals::context->CopyResource(REX_CAST(motionVectorsShared, ID3D11Texture2D),
                                   REX_CAST(motionVectorsResource, ID3D11Texture2D));
+
+            // Release motion vectors resource
+            motionVectorsResource->Release();
         } else {
             logger::warn("Motion vectors SRV is missing.");
         }
@@ -407,6 +399,9 @@ void Streamline::allocateBuffers() {
             dummyDepthSRV->GetResource(&depthResource);
             Globals::context->CopyResource(REX_CAST(depthBufferShared, ID3D11Texture2D),
                                   REX_CAST(depthResource, ID3D11Texture2D));
+
+            // Release depth buffer resource
+            depthResource->Release();
         } else {
             logger::warn("Depth buffer SRV is missing.");
             if (!dummyDepthSRV) {
@@ -416,12 +411,11 @@ void Streamline::allocateBuffers() {
                 depth.depthSRV->GetResource(&depthResource);
                 Globals::context->CopyResource(REX_CAST(depthBufferShared, ID3D11Texture2D),
                                                REX_CAST(depthResource, ID3D11Texture2D));
+
+                // Release depth buffer resource
+                depthResource->Release();
             }
         }
-
-        // Restore render targets
-      
-        Globals::context->OMSetRenderTargets(8, REX_CAST(backupViews, ID3D11RenderTargetView*), REX_CAST(backupDsv, ID3D11DepthStencilView));
 
 
         // Load shared buffers
@@ -456,10 +450,26 @@ void Streamline::allocateBuffers() {
             logger::info("DLSS feature evaluated successfully.");
         }
 
-        swapChainResource->Release();
         // Release depth buffer resource
         if (dummyDepthSRV) {
             dummyDepthSRV->Release();
+        }
+        
+        // Free all resources
+        if (swapChainResource) {
+            swapChainResource->Release();
+        }
+
+        if (motionVectorsShared) {
+            motionVectorsShared->Release();
+        }
+
+        if (depthBufferShared) {
+            depthBufferShared->Release();
+        }
+
+        if (colorBufferShared) {
+            colorBufferShared->Release();
         }
         logger::info("Frame present handled successfully.");
     }
