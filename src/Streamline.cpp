@@ -142,11 +142,11 @@ namespace Streamline {
         // --- Allocate Color Buffer ---
         {
             D3D11_TEXTURE2D_DESC colorDesc = {};
-            colorDesc.Width = Globals::RenderResolutionWidth;  
-            colorDesc.Height = Globals::RenderResolutionHeight;
+            colorDesc.Width = Globals::OutputResolutionWidth; 
+            colorDesc.Height = Globals::OutputResolutionHeight;
             colorDesc.MipLevels = 1;
             colorDesc.ArraySize = 1;
-            colorDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; 
+            colorDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // Common color format
             colorDesc.SampleDesc.Count = 1;
             colorDesc.Usage = D3D11_USAGE_DEFAULT;
             colorDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -169,7 +169,7 @@ namespace Streamline {
             depthDesc.Height = Globals::OutputResolutionHeight;
             depthDesc.MipLevels = 1;
             depthDesc.ArraySize = 1;
-            depthDesc.Format = DXGI_FORMAT_R24G8_TYPELESS; 
+            depthDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;  // Typeless for flexibility with depth/stencil views
             depthDesc.SampleDesc.Count = 1;
             depthDesc.Usage = D3D11_USAGE_DEFAULT;
             depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
@@ -224,8 +224,7 @@ namespace Streamline {
 
         sl::Resource colorOut = {sl::ResourceType::eTex2d, colorBufferShared, 0};
 
-        sl::Extent fullExtent{0, 0, (UINT)Globals::renderer->GetScreenSize().width,
-                              (UINT)Globals::renderer->GetScreenSize().height};
+        sl::Extent fullExtent{0, 0, (UINT)Globals::RenderResolutionWidth, (UINT)Globals::RenderResolutionHeight};
  
         // Tagging resources
         sl::ResourceTag colorInTag = sl::ResourceTag {&colorIn, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
@@ -258,6 +257,7 @@ namespace Streamline {
             logger::warn("DLSS is not available. Skipping update.");
             return;
         }
+
 
         auto renderer = Globals::renderer;
         if (!renderer) {
