@@ -29,6 +29,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     logger::info("Game version: {}", skse->RuntimeVersion().string());
     SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
     Settings::LoadSettings();
+    Hooks::earlyInstall();
     Globals::earlyInit();
     return true;
 }

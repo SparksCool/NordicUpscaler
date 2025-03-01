@@ -5,12 +5,15 @@
 #include <REX/W32/DXGI.h>
 #include <d3d11.h>        
 #include <dxgi.h>       
+#include <dxgi1_2.h>
 
 namespace Hooks {
     extern ID3D11RenderTargetView* g_BackBufferRTV;
     extern bool g_IsBackBufferActive;
+    extern int omIndex;
 
     void Install();
+    void earlyInstall();
 
     struct HkDX11PresentSwapChain {
         static void InstallHook();
@@ -36,4 +39,5 @@ namespace Hooks {
         static inline decltype(&thunk) func;
         static void InstallHook();
     };
+
 }

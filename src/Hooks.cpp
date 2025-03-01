@@ -11,6 +11,7 @@ namespace Hooks {
     ID3D11RenderTargetView* g_BackBufferRTV = nullptr;
     bool g_IsBackBufferActive = false;
     ID3D11Texture2D* pTexture = nullptr;
+    int omIndex = 0;
     // Hooks into the DirectX 11 swap chain's Present function to intercept frame rendering
     void HkDX11PresentSwapChain::InstallHook() { 
         if (!Globals::swapChain) {
@@ -83,15 +84,15 @@ namespace Hooks {
 
     void HkRSSetViewports::thunk(ID3D11DeviceContext* This, UINT NumViewports, const D3D11_VIEWPORT* pViewports) {
 
-        ID3D11RenderTargetView* currentRTV = nullptr;
-        This->OMGetRenderTargets(1, &currentRTV, nullptr);
-
-        if (NumViewports == 1 && g_IsBackBufferActive) {
-            D3D11_VIEWPORT viewport = pViewports[0];
-            viewport.Height = Globals::RenderResolutionHeight;
-            viewport.Width = Globals::RenderResolutionWidth;
-            func(This, NumViewports, &viewport);
-            return;
+        if (NumViewports == 1) {
+            if (pViewports[0].Height == Globals::RenderResolutionHeight &&
+                pViewports[0].Width == Globals::RenderResolutionWidth) {
+                D3D11_VIEWPORT viewport = pViewports[0];
+                viewport.Height = Globals::OutputResolutionHeight;
+                viewport.Width = Globals::OutputResolutionWidth;
+                func(This, NumViewports, &viewport);
+                return;
+            }
         }
 
         func(This, NumViewports, pViewports);
@@ -124,46 +125,32 @@ namespace Hooks {
         logger::info("RSSetViewports hook installed!");
     }
 
-    void hkOMSetRenderTargets::thunk(ID3D11DeviceContext* This, UINT NumViews,
-                                     ID3D11RenderTargetView* const* ppRenderTargetViews,
-                                     ID3D11DepthStencilView* pDepthStencilView) {
-        logger::info("OMSetRenderTargets hook called");
+void hkOMSetRenderTargets::thunk(ID3D11DeviceContext* This, UINT NumViews,
+                                  ID3D11RenderTargetView* const* ppRenderTargetViews,
+                                  ID3D11DepthStencilView* pDepthStencilView) {
+    logger::info("OMSetRenderTargets hook called");
 
-        auto& renderer = Globals::renderer;
-        auto& frameBuffer = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
-
-        g_IsBackBufferActive = false;  // Reset the flag every time
-        for (UINT i = 0; i < NumViews; i++) {
-            if (ppRenderTargetViews[i]) {
-                ID3D11Resource* pResource = nullptr;
-                ppRenderTargetViews[i]->GetResource(&pResource);
-
-                if (pResource) {
-                    ID3D11Texture2D* pTexture = nullptr;
-                    HRESULT hr = pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTexture);
-                    pResource->Release();
-
-                    if (SUCCEEDED(hr) && pTexture) {
-                        // Compare description instead of pointers
-                        D3D11_TEXTURE2D_DESC desc1, desc2;
-                        pTexture->GetDesc(&desc1);
-                        frameBuffer.texture->GetDesc(&desc2);
-
-                        if (desc1.Width == desc2.Width && desc1.Height == desc2.Height &&
-                            desc1.Format == desc2.Format && desc1.BindFlags == desc2.BindFlags) {
-                            g_IsBackBufferActive = true;
-                            logger::info("Back buffer detected at index {}", i);
-                        }
-
-                        pTexture->Release();
-                    }
-                }
-            }
-        }
-
-        // Call the original function
-        func(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+    auto& renderer = Globals::renderer;
+    auto& frameBuffer = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
+    
+    if (!ppRenderTargetViews[0] && pDepthStencilView) {
+        logger::warn("Frame buffer render target view not found");
+        return;
     }
+
+    if (omIndex == 4) {
+        omIndex = 0;
+        g_IsBackBufferActive = true;
+        logger::info("Back buffer is active");
+    } else {
+        g_IsBackBufferActive = false;
+    }
+
+    omIndex++;
+
+    // Call the original function
+    func(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+}
 
     void hkOMSetRenderTargets::InstallHook() {
        logger::info("Installing hkOMSetRenderTargets hook...");
@@ -192,13 +179,17 @@ namespace Hooks {
        logger::info("hkOMSetRenderTargets hook installed!");
     }
 
+    void earlyInstall() { 
+        
+    }
+
     void Install() {
         g_BackBufferRTV = nullptr;
         g_IsBackBufferActive = false;
 
+        //HkRSSetViewports::InstallHook();
         HkDX11PresentSwapChain::InstallHook();
         hkOMSetRenderTargets::InstallHook();
-        HkRSSetViewports::InstallHook();
         //HkDRS::InstallHook();
     }
 

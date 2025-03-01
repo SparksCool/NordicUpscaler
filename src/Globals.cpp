@@ -6,6 +6,7 @@
 #include <Streamline.h>
 #include <sl.h>
 #include <SimpleIni.h>
+#include <dxgi1_2.h>
 
 namespace Globals {
     // The skyrim renderer 
@@ -18,6 +19,8 @@ namespace Globals {
     REX::W32::IDXGISwapChain* swapChain = nullptr;
     // The context used by the renderer
     REX::W32::ID3D11DeviceContext* context = nullptr;
+    // DXGI2 Factory
+    IDXGIFactory2* factory = nullptr;
 
     // Called before the game is fully loaded
     void earlyInit() {

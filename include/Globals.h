@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 #include <sl_core_types.h>
+#include <dxgi1_2.h>
 
 #pragma once
 #define REX_CAST(resource, type) reinterpret_cast<REX::W32::type*>(resource)
@@ -14,6 +15,7 @@ namespace Globals
     extern REX::W32::ID3D11Device* g_D3D11Device;  
     extern REX::W32::IDXGISwapChain* swapChain;
     extern REX::W32::ID3D11DeviceContext* context;
+    extern IDXGIFactory2* factory;
 
     inline bool Streamline_Init = false;
     inline bool DLSS_Available = false;
