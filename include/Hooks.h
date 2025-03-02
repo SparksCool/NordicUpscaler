@@ -28,4 +28,11 @@ namespace Hooks {
         static void InstallHook();
     };
 
+    struct hkCreateRenderTarget {
+        static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target,
+                          RE::BSGraphics::RenderTargetProperties* a_properties);
+        static inline REL::Relocation<decltype(&thunk)> func;
+        static void InstallHook();
+    };
+
 }

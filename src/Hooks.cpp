@@ -109,8 +109,32 @@ namespace Hooks {
        logger::info("hkOMSetRenderTargets hook installed!");
     }
 
+
+        void hkCreateRenderTarget::thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target,
+                          RE::BSGraphics::RenderTargetProperties* a_properties) {
+            // Debug log (if using logging)
+            spdlog::info("Intercepted CreateRenderTarget: Target ID = {}", static_cast<int>(a_target));
+
+            // Modify properties if needed (e.g., resolution downscaling)
+            if (a_properties) {
+                a_properties->width = 1280;  // Globals::RenderResolutionWidth;
+                a_properties->height = 720;   // Globals::RenderResolutionHeight;
+            }
+
+            // Call the original function
+            func(This, a_target, a_properties);
+        }
+
+
+        void hkCreateRenderTarget::InstallHook() {
+            // Get the target address for the hook
+            std::uintptr_t targetAddress = REL::RelocationID(100458, 107175).address() + REL::Relocate(0x3F0, 0x3F3, 0x548);
+
+            // Use write_thunk_call to hook the function
+            stl::write_thunk_call<hkCreateRenderTarget>(targetAddress);
+        }
     void earlyInstall() { 
-        
+        hkCreateRenderTarget::InstallHook();
     }
 
     void Install() {
