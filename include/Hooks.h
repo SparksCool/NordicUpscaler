@@ -21,18 +21,6 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
-    struct HkDRS {
-        static void thunk(RE::BSGraphics::State* a_state);
-        static inline decltype(&thunk) func;
-        static void InstallHook();
-    };
-
-    struct HkRSSetViewports {
-        static void thunk(ID3D11DeviceContext* This, UINT NumViewports, const D3D11_VIEWPORT* pViewports);
-        static inline decltype(&thunk) func;
-        static void InstallHook();
-    };
-
     struct hkOMSetRenderTargets {
         static void thunk(ID3D11DeviceContext* This, UINT NumViews, ID3D11RenderTargetView* const* ppRenderTargetViews,
                           ID3D11DepthStencilView* pDepthStencilView);

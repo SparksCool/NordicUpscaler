@@ -6,6 +6,9 @@
 #include <sl.h>  
 #include <Streamline.h>
 #include <Settings.h>
+#include <wrl/client.h>
+
+using Microsoft::WRL::ComPtr;
 
 namespace Hooks {
     ID3D11RenderTargetView* g_BackBufferRTV = nullptr;
@@ -70,6 +73,41 @@ namespace Hooks {
         // Call original function, otherwise game will cease rendering and effectively freeze
         return func(pSwapChain, SyncInterval, Flags);
     }
+    void hkOMSetRenderTargets::thunk(ID3D11DeviceContext* This, UINT NumViews,
+                                   ID3D11RenderTargetView* const* ppRenderTargetViews,
+                          ID3D11DepthStencilView* pDepthStencilView) {
+            
+            // Lower the resolution of the render target
+
+            func(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+        }
+
+    void hkOMSetRenderTargets::InstallHook() {
+       logger::info("Installing hkOMSetRenderTargets hook...");
+
+       // Get the device context
+       ID3D11DeviceContext* context = nullptr;
+       ID3D11Device* device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
+       device->GetImmediateContext(&context);
+       if (!context) {
+           logger::error("Failed to get ID3D11DeviceContext");
+           return;
+       }
+
+       // Get VTable from device context
+       uintptr_t* vtable = *reinterpret_cast<uintptr_t**>(context);
+
+       // Store the original function
+       func = reinterpret_cast<decltype(func)>(vtable[33]);  // RSSetViewports is at index 44
+
+       // Replace with our hook function
+       DWORD oldProtect;
+       VirtualProtect(&vtable[33], sizeof(uintptr_t), PAGE_EXECUTE_READWRITE, &oldProtect);
+       vtable[33] = reinterpret_cast<uintptr_t>(&thunk);
+       VirtualProtect(&vtable[33], sizeof(uintptr_t), oldProtect, &oldProtect);
+
+       logger::info("hkOMSetRenderTargets hook installed!");
+    }
 
     void earlyInstall() { 
         
@@ -80,6 +118,8 @@ namespace Hooks {
         g_IsBackBufferActive = false;
 
         HkDX11PresentSwapChain::InstallHook();
+        hkOMSetRenderTargets::InstallHook();
+        //HkDRS::InstallHook();
     }
 
 
