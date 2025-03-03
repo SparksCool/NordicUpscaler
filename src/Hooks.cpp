@@ -7,6 +7,7 @@
 #include <Streamline.h>
 #include <Settings.h>
 #include <wrl/client.h>
+#include <unordered_set>
 
 using Microsoft::WRL::ComPtr;
 
@@ -18,6 +19,7 @@ namespace Hooks {
     bool DLSSProcessing = false;
     int FrameViewPortChanged = 0;
     inline int& MaxFrameViewPortChanged = Settings::MaxFrameViewPortUpdates;
+    std::unordered_set<RE::RENDER_TARGET> processedRenderTargets;
     // Hooks into the DirectX 11 swap chain's Present function to intercept frame rendering
     void HkDX11PresentSwapChain::InstallHook() { 
         if (!Globals::swapChain) {
@@ -45,6 +47,7 @@ namespace Hooks {
         }
 
         FrameViewPortChanged = 0;
+        processedRenderTargets.clear();
 
         Streamline::Streamline* stream = Streamline::Streamline::getSingleton();
 
@@ -54,7 +57,7 @@ namespace Hooks {
                 // HandlePresent function
                stream->updateConstants();
 
-               stream->HandlePresent();
+               stream->HandlePresent(Globals::renderer);
 
                 // Mess with RenderTargets
                ID3D11Device* device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
@@ -67,7 +70,7 @@ namespace Hooks {
                    // Replace the render target using the shared color buffer
                    ID3D11Resource* colorBuffer = nullptr;
                    renderTargetView->GetResource(&colorBuffer);
-                   context->CopyResource(colorBuffer, stream->colorBufferShared);
+                   context->CopyResource(colorBuffer, stream->colorOutBufferShared);
                    context->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
                    colorBuffer->Release();
                    renderTargetView->Release();
@@ -113,7 +116,7 @@ namespace Hooks {
             return;
         }
         // Handle our excluded viewports
-        if (FrameViewPortChanged == VIEWPORT_GAME_P2 || 
+        /* if (FrameViewPortChanged == VIEWPORT_GAME_P2 ||
             FrameViewPortChanged == VIEWPORT_COLOR_P2 ||
             FrameViewPortChanged == VIEWPORT_GRASS_SHDW_P2 ||
             FrameViewPortChanged == VIEWPORT_MCP) {
@@ -121,15 +124,14 @@ namespace Hooks {
             FrameViewPortChanged += 1;
             func(pContext, 1, pViewports);
             return;
-        }
+        }*/
+
 
 
         std::vector<D3D11_VIEWPORT> modifiedViewports(pViewports, pViewports + NumViewports);
 
-        // Only modify the scene viewport(s) behind the UI.
-        // Heuristic: assume the first viewport corresponds to the scene.
         if (!modifiedViewports.empty()) {
-            // Log the viewport dimensions.
+            /*  // Log the viewport dimensions.
             logger::info("Viewport dimensions: {}x{}", modifiedViewports[0].Width, modifiedViewports[0].Height);
             if (modifiedViewports[0].Width == Globals::OutputResolutionWidth &&
                 modifiedViewports[0].Height == Globals::OutputResolutionHeight) {
@@ -138,7 +140,43 @@ namespace Hooks {
                 modifiedViewports[0].Height = static_cast<float>(Globals::RenderResolutionHeight);
                 logger::info("ViewPort Changed: {}", FrameViewPortChanged);
             }
-            FrameViewPortChanged += 1;
+            FrameViewPortChanged += 1; */
+
+            // Acceptable Downscaling Targets
+            std::unordered_set<RE::RENDER_TARGET> targets = {
+                RE::RENDER_TARGET::kMAIN,
+                RE::RENDER_TARGET::kMAIN_COPY,
+                RE::RENDER_TARGET::kHDR_BLOOM,
+                RE::RENDER_TARGET::kINDIRECT,
+                RE::RENDER_TARGET::kSAO,
+                RE::RENDER_TARGET::kTEMPORAL_AA_ACCUMULATION_1,
+                RE::RENDER_TARGET::kTEMPORAL_AA_ACCUMULATION_2
+            };
+
+            ID3D11Resource* currentRenderTarget = nullptr;
+            ID3D11RenderTargetView* currentRTV = nullptr;
+            pContext->OMGetRenderTargets(1, &currentRTV, nullptr);
+            auto& renderer = Globals::renderer;
+
+            // Iterate through render targets in renderer data
+            int i = 0;
+            while (i < RE::RENDER_TARGET::kTOTAL) {
+                if (renderer->GetRendererData()->renderTargets[i].RTV == currentRTV) {
+                    if (processedRenderTargets.find(static_cast<RE::RENDER_TARGET>(i)) !=
+                        processedRenderTargets.end()) {
+                        break;
+                    } else if (targets.find(static_cast<RE::RENDER_TARGET>(i)) != targets.end()) {
+                        modifiedViewports[0].Width = static_cast<float>(Globals::RenderResolutionWidth);
+                        modifiedViewports[0].Height = static_cast<float>(Globals::RenderResolutionHeight);
+                        logger::info("ViewPort Changed: {}, with index {}", FrameViewPortChanged, i);
+                        processedRenderTargets.insert(static_cast<RE::RENDER_TARGET>(i));
+                        Streamline::Streamline::getSingleton()->renderTargets[i].RTV =
+                            renderer->GetRendererData()->renderTargets[i].RTV;
+                        break;
+                    }
+                }
+                i++;
+            }
         }
 
         // Call the original RSSetViewports with the (possibly) modified viewport array.
@@ -152,7 +190,9 @@ namespace Hooks {
         g_BackBufferRTV = nullptr;
         g_IsBackBufferActive = false;
 
-        hkRSSetViewports::InstallHook();
+        //hkRSSetViewports::InstallHook();
+
+
         HkDX11PresentSwapChain::InstallHook();
     }
 

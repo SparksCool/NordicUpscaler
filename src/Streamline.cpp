@@ -160,7 +160,18 @@ namespace Streamline {
             } else {
                 logger::info("Color buffer created: {}x{}", colorDesc.Width, colorDesc.Height);
             }
+
+            // Do the same for the output buffer
+            hr = Globals::g_D3D11Device->CreateTexture2D(REX_CAST(&colorDesc, D3D11_TEXTURE2D_DESC), nullptr,
+                                                         REX_CAST(&colorOutBufferShared, ID3D11Texture2D*));
+
+            if (FAILED(hr)) {
+                logger::error("Failed to create output buffer. HRESULT: {0}", hr);
+            } else {
+                logger::info("Output buffer created: {}x{}", colorDesc.Width, colorDesc.Height);
+            }
         }
+
 
         // --- Allocate Depth Buffer ---
         {
@@ -211,6 +222,7 @@ namespace Streamline {
         logger::info("All DLSS shared buffers allocated successfully.");
     }
 
+
     void Streamline::loadDlSSBuffers() {
         // Setup viewport
         sl::ViewportHandle view{viewport};
@@ -222,15 +234,16 @@ namespace Streamline {
 
         sl::Resource motionVectorsIn = {sl::ResourceType::eTex2d, motionVectorsShared, 0};
 
-        sl::Resource colorOut = {sl::ResourceType::eTex2d, colorBufferShared, 0};
+        sl::Resource colorOut = {sl::ResourceType::eTex2d, colorOutBufferShared, 0};
 
-        sl::Extent fullExtent{0, 0, (UINT)Globals::RenderResolutionWidth, (UINT)Globals::RenderResolutionHeight};
+        sl::Extent dsExtent{0, 0, (UINT)Globals::RenderResolutionWidth, (UINT)Globals::RenderResolutionHeight};
+        sl::Extent fullExtent{0, 0, (UINT)Globals::OutputResolutionWidth, (UINT)Globals::OutputResolutionHeight};
  
         // Tagging resources
-        sl::ResourceTag colorInTag = sl::ResourceTag {&colorIn, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
-        sl::ResourceTag depthInTag = sl::ResourceTag{&depthIn, sl::kBufferTypeDepth, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
-        sl::ResourceTag motionVectorsInTag = sl::ResourceTag{&motionVectorsIn, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
-        sl::ResourceTag outputBufferTag = sl::ResourceTag{&colorOut, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eOnlyValidNow, &fullExtent};
+        sl::ResourceTag colorInTag = sl::ResourceTag {&colorIn, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eOnlyValidNow, 0};
+        sl::ResourceTag depthInTag = sl::ResourceTag{&depthIn, sl::kBufferTypeDepth, sl::ResourceLifecycle::eOnlyValidNow, 0};
+        sl::ResourceTag motionVectorsInTag = sl::ResourceTag{&motionVectorsIn, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eOnlyValidNow, 0};
+        sl::ResourceTag outputBufferTag = sl::ResourceTag{&colorOut, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eOnlyValidNow, 0};
 
         sl::ResourceTag inputs[] = {colorInTag, outputBufferTag, depthInTag, motionVectorsInTag};
 
@@ -299,7 +312,7 @@ namespace Streamline {
         logger::info("DLSS constants updated.");
     }
 
-    void Streamline::HandlePresent() {
+    void Streamline::HandlePresent(RE::BSGraphics::Renderer* renderer) {
         logger::info("Handling frame present...");
 
         if (!Settings::Plugin_Enabled) {
@@ -317,8 +330,6 @@ namespace Streamline {
             logger::warn("D3D11 context is null. Cannot process frame.");
             return;
         }
-
-        auto renderer = Globals::renderer;
         if (!renderer) {
             logger::warn("Renderer is null. Cannot process frame.");
             return;
@@ -326,7 +337,7 @@ namespace Streamline {
 
         // Retrieve game buffers
         auto& swapChain = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
-        auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
+        auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kMOTION_VECTOR];
         RE::BSGraphics::DepthStencilData depth{};
         //= renderer->GetRendererData()->depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 

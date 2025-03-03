@@ -17,6 +17,8 @@ namespace Streamline {
         ID3D11Texture2D* colorBufferShared = nullptr;
         ID3D11Texture2D* motionVectorsShared = nullptr;
         ID3D11Texture2D* depthBufferShared = nullptr;
+        ID3D11Texture2D* colorOutBufferShared = nullptr;
+        RE::BSGraphics::RenderTargetData renderTargets[RE::RENDER_TARGETS::kTOTAL];
 
         static Streamline* getSingleton() {
             static Streamline singleton;
@@ -31,7 +33,7 @@ namespace Streamline {
         void getDLSSRenderResolution();
         void loadDlSSBuffers();
         void updateConstants();
-        void HandlePresent();
+        void HandlePresent(RE::BSGraphics::Renderer* renderer);
         void allocateBuffers();
         void updateBuffers();
     };
