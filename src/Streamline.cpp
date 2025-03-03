@@ -312,7 +312,7 @@ namespace Streamline {
         logger::info("DLSS constants updated.");
     }
 
-    void Streamline::HandlePresent(RE::BSGraphics::Renderer* renderer) {
+    void Streamline::HandlePresent() {
         logger::info("Handling frame present...");
 
         if (!Settings::Plugin_Enabled) {
@@ -330,6 +330,7 @@ namespace Streamline {
             logger::warn("D3D11 context is null. Cannot process frame.");
             return;
         }
+        auto renderer = Globals::renderer;
         if (!renderer) {
             logger::warn("Renderer is null. Cannot process frame.");
             return;

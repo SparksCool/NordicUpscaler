@@ -58,6 +58,8 @@ namespace MCP {
             Settings::MaxFrameViewPortUpdates--;
         }
 
+        ImGui::Checkbox("Viewport Changing Enabled", &Settings::Viewport_Enabled);
+
 
         if (Globals::Streamline_Init) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),"Streamline Initialized: True");

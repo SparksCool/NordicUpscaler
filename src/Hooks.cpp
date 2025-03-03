@@ -51,13 +51,13 @@ namespace Hooks {
 
         Streamline::Streamline* stream = Streamline::Streamline::getSingleton();
 
-            if (Globals::DLSS_Available && Settings::Plugin_Enabled) {
+            if (Globals::DLSS_Available && Settings::Viewport_Enabled) {
             DLSSProcessing = true;
                 //Streamline::Streamline::getSingleton()->loadDlSSBuffers(); This has been moved inside the
                 // HandlePresent function
                stream->updateConstants();
 
-               stream->HandlePresent(Globals::renderer);
+               stream->HandlePresent();
 
                 // Mess with RenderTargets
                ID3D11Device* device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
@@ -190,7 +190,7 @@ namespace Hooks {
         g_BackBufferRTV = nullptr;
         g_IsBackBufferActive = false;
 
-        //hkRSSetViewports::InstallHook();
+        hkRSSetViewports::InstallHook();
 
 
         HkDX11PresentSwapChain::InstallHook();

@@ -33,7 +33,7 @@ namespace Streamline {
         void getDLSSRenderResolution();
         void loadDlSSBuffers();
         void updateConstants();
-        void HandlePresent(RE::BSGraphics::Renderer* renderer);
+        void HandlePresent();
         void allocateBuffers();
         void updateBuffers();
     };
