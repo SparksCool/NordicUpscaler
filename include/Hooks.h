@@ -21,18 +21,10 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
-    struct hkOMSetRenderTargets {
-        static void thunk(ID3D11DeviceContext* This, UINT NumViews, ID3D11RenderTargetView* const* ppRenderTargetViews,
-                          ID3D11DepthStencilView* pDepthStencilView);
+    struct hkRSSetViewports {
+        static void InstallHook();
+        static void WINAPI thunk(ID3D11DeviceContext* pContext, UINT NumViewports, const D3D11_VIEWPORT* pViewports);
         static inline decltype(&thunk) func;
-        static void InstallHook();
-    };
-
-    struct hkCreateRenderTarget {
-        static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target,
-                          RE::BSGraphics::RenderTargetProperties* a_properties);
-        static inline REL::Relocation<decltype(&thunk)> func;
-        static void InstallHook();
     };
 
 }

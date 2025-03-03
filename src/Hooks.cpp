@@ -15,7 +15,9 @@ namespace Hooks {
     bool g_IsBackBufferActive = false;
     ID3D11Texture2D* pTexture = nullptr;
     int omIndex = 0;
-    int viewPortChanged = 0;
+    bool DLSSProcessing = false;
+    int FrameViewPortChanged = 0;
+    inline int& MaxFrameViewPortChanged = Settings::MaxFrameViewPortUpdates;
     // Hooks into the DirectX 11 swap chain's Present function to intercept frame rendering
     void HkDX11PresentSwapChain::InstallHook() { 
         if (!Globals::swapChain) {
@@ -41,9 +43,13 @@ namespace Hooks {
             logger::warn("Swap chain not found, skipping hook.");
             return func(pSwapChain, SyncInterval, Flags);
         }
+
+        FrameViewPortChanged = 0;
+
         Streamline::Streamline* stream = Streamline::Streamline::getSingleton();
 
             if (Globals::DLSS_Available && Settings::Plugin_Enabled) {
+            DLSSProcessing = true;
                 //Streamline::Streamline::getSingleton()->loadDlSSBuffers(); This has been moved inside the
                 // HandlePresent function
                stream->updateConstants();
@@ -67,85 +73,87 @@ namespace Hooks {
                    renderTargetView->Release();
                }
 
+               DLSSProcessing = false;
             }
-
-
         // Call original function, otherwise game will cease rendering and effectively freeze
         return func(pSwapChain, SyncInterval, Flags);
     }
-    void hkOMSetRenderTargets::thunk(ID3D11DeviceContext* This, UINT NumViews,
-                                   ID3D11RenderTargetView* const* ppRenderTargetViews,
-                          ID3D11DepthStencilView* pDepthStencilView) {
-            
-            // Lower the resolution of the render target
 
-            func(This, NumViews, ppRenderTargetViews, pDepthStencilView);
+    void hkRSSetViewports::InstallHook() {
+        logger::info("Installing RSSetViewports hook...");
+
+        // Get the device context
+        ID3D11DeviceContext* context = nullptr;
+        ID3D11Device* device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
+        device->GetImmediateContext(&context);
+        if (!context) {
+            logger::error("Failed to get ID3D11DeviceContext");
+            return;
         }
 
-    void hkOMSetRenderTargets::InstallHook() {
-       logger::info("Installing hkOMSetRenderTargets hook...");
+        // Get VTable from device context
+        uintptr_t* vtable = *reinterpret_cast<uintptr_t**>(context);
 
-       // Get the device context
-       ID3D11DeviceContext* context = nullptr;
-       ID3D11Device* device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
-       device->GetImmediateContext(&context);
-       if (!context) {
-           logger::error("Failed to get ID3D11DeviceContext");
-           return;
-       }
+        // Store the original function
+        func = reinterpret_cast<decltype(func)>(vtable[44]);  // RSSetViewports is at index 44
 
-       // Get VTable from device context
-       uintptr_t* vtable = *reinterpret_cast<uintptr_t**>(context);
+        // Replace with our hook function
+        DWORD oldProtect;
+        VirtualProtect(&vtable[44], sizeof(uintptr_t), PAGE_EXECUTE_READWRITE, &oldProtect);
+        vtable[44] = reinterpret_cast<uintptr_t>(&thunk);
+        VirtualProtect(&vtable[44], sizeof(uintptr_t), oldProtect, &oldProtect);
 
-       // Store the original function
-       func = reinterpret_cast<decltype(func)>(vtable[33]);  // RSSetViewports is at index 44
-
-       // Replace with our hook function
-       DWORD oldProtect;
-       VirtualProtect(&vtable[33], sizeof(uintptr_t), PAGE_EXECUTE_READWRITE, &oldProtect);
-       vtable[33] = reinterpret_cast<uintptr_t>(&thunk);
-       VirtualProtect(&vtable[33], sizeof(uintptr_t), oldProtect, &oldProtect);
-
-       logger::info("hkOMSetRenderTargets hook installed!");
+        logger::info("RSSetViewports hook installed!");
     }
 
+    void __stdcall hkRSSetViewports::thunk(ID3D11DeviceContext* pContext, UINT NumViewports,
+                                           const D3D11_VIEWPORT* pViewports) {
+        if (DLSSProcessing || FrameViewPortChanged >= MaxFrameViewPortChanged || !Settings::Plugin_Enabled) {
+            func(pContext, 1, pViewports);
+            return;
+        }
+        // Handle our excluded viewports
+        if (FrameViewPortChanged == VIEWPORT_GAME_P2 || 
+            FrameViewPortChanged == VIEWPORT_COLOR_P2 ||
+            FrameViewPortChanged == VIEWPORT_GRASS_SHDW_P2 ||
+            FrameViewPortChanged == VIEWPORT_MCP) {
+            // Skip this run of the function to prevent issues
+            FrameViewPortChanged += 1;
+            func(pContext, 1, pViewports);
+            return;
+        }
 
-        void hkCreateRenderTarget::thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target,
-                          RE::BSGraphics::RenderTargetProperties* a_properties) {
-            // Debug log (if using logging)
-            spdlog::info("Intercepted CreateRenderTarget: Target ID = {}", static_cast<int>(a_target));
 
-            // Modify properties if needed (e.g., resolution downscaling)
-            if (a_properties) {
-                a_properties->width = 1280;  // Globals::RenderResolutionWidth;
-                a_properties->height = 720;   // Globals::RenderResolutionHeight;
+        std::vector<D3D11_VIEWPORT> modifiedViewports(pViewports, pViewports + NumViewports);
+
+        // Only modify the scene viewport(s) behind the UI.
+        // Heuristic: assume the first viewport corresponds to the scene.
+        if (!modifiedViewports.empty()) {
+            // Log the viewport dimensions.
+            logger::info("Viewport dimensions: {}x{}", modifiedViewports[0].Width, modifiedViewports[0].Height);
+            if (modifiedViewports[0].Width == Globals::OutputResolutionWidth &&
+                modifiedViewports[0].Height == Globals::OutputResolutionHeight) {
+
+                modifiedViewports[0].Width = static_cast<float>(Globals::RenderResolutionWidth);
+                modifiedViewports[0].Height = static_cast<float>(Globals::RenderResolutionHeight);
+                logger::info("ViewPort Changed: {}", FrameViewPortChanged);
             }
-
-            // Call the original function
-            func(This, a_target, a_properties);
+            FrameViewPortChanged += 1;
         }
 
+        // Call the original RSSetViewports with the (possibly) modified viewport array.
+        func(pContext, NumViewports, modifiedViewports.data());
+    }
 
-        void hkCreateRenderTarget::InstallHook() {
-            // Get the target address for the hook
-            std::uintptr_t targetAddress = REL::RelocationID(100458, 107175).address() + REL::Relocate(0x3F0, 0x3F3, 0x548);
-
-            // Use write_thunk_call to hook the function
-            stl::write_thunk_call<hkCreateRenderTarget>(targetAddress);
-        }
     void earlyInstall() { 
-        hkCreateRenderTarget::InstallHook();
     }
 
     void Install() {
         g_BackBufferRTV = nullptr;
         g_IsBackBufferActive = false;
 
+        hkRSSetViewports::InstallHook();
         HkDX11PresentSwapChain::InstallHook();
-        hkOMSetRenderTargets::InstallHook();
-        //HkDRS::InstallHook();
     }
-
-
 
 }

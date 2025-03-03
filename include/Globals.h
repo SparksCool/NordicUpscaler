@@ -4,6 +4,20 @@
 #include <sl_core_types.h>
 #include <dxgi1_2.h>
 
+// Defines for specific viewports and what buffer they correspond to
+
+#define VIEWPORT_GAME_P2 19
+#define VIEWPORT_UI 22
+#define VIEWPORT_MOUSE 23
+#define VIEWPORT_MCP 24
+#define VIEWPORT_COLOR 31
+#define VIEWPORT_LANDSCP 37
+#define VIEWPORT_GRASS_SHDW_P2 44
+#define VIEWPORT_COLOR_P2 59
+#define VIEWPORT_HUD 117
+
+// End defines for specific viewports and what buffer they correspond to
+
 #pragma once
 #define REX_CAST(resource, type) reinterpret_cast<REX::W32::type*>(resource)
 #define UNREX_CAST(resource, type) reinterpret_cast<type*>(resource)

@@ -46,6 +46,18 @@ namespace MCP {
         ImGui::Text("Render Resolution: %dx%d", Globals::RenderResolutionWidth, Globals::RenderResolutionHeight);
         ImGui::Text("Output Resolution: %dx%d", Globals::OutputResolutionWidth, Globals::OutputResolutionHeight);
 
+        // Change MaxFrameViewPortUpdates to a setting
+        ImGui::Text("Max Frame View Port Updates: %d", Settings::MaxFrameViewPortUpdates);
+
+        // Buttons to increase and decrease MaxFrameViewPortUpdates
+        if (ImGui::Button("Increase Max Frame View Port Updates")) {
+            Settings::MaxFrameViewPortUpdates++;
+        }
+
+        if (ImGui::Button("Decrease Max Frame View Port Updates")) {
+            Settings::MaxFrameViewPortUpdates--;
+        }
+
 
         if (Globals::Streamline_Init) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),"Streamline Initialized: True");
