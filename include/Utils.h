@@ -4,5 +4,6 @@
 #pragma once
 
 namespace Utils {
-
+    void** get_vtable_ptr(void* obj);
+    void loop_vtable(void** vtable, int size);
 }

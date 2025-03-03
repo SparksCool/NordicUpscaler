@@ -4,6 +4,7 @@
 #include "Hooks.h"
 #include "Globals.h"
 #include <sl.h>  
+#include "Utils.h"
 #include <Streamline.h>
 #include <Settings.h>
 #include <wrl/client.h>
@@ -19,6 +20,8 @@ namespace Hooks {
     bool DLSSProcessing = false;
     int FrameViewPortChanged = 0;
     inline int& MaxFrameViewPortChanged = Settings::MaxFrameViewPortUpdates;
+    int renderTargetIndex = 0;
+    int initPresent = 0;
     std::unordered_set<RE::RENDER_TARGET> processedRenderTargets;
     // Hooks into the DirectX 11 swap chain's Present function to intercept frame rendering
     void HkDX11PresentSwapChain::InstallHook() { 
@@ -29,7 +32,8 @@ namespace Hooks {
 
         Globals::SwapChain_Hooked = true;
 
-        void** vtable = *reinterpret_cast<void***>(Globals::swapChain);  // Get the vtable of the swap chain
+        void** vtable = Utils::get_vtable_ptr(Globals::swapChain);  // Get the vtable of the swap chain
+
         func = reinterpret_cast<decltype(func)>(vtable[8]);  // Present is the 8th function in the swap chain's vtable
 
         // Overwrite the Present function with our own
@@ -51,7 +55,7 @@ namespace Hooks {
 
         Streamline::Streamline* stream = Streamline::Streamline::getSingleton();
 
-            if (Globals::DLSS_Available && Settings::Viewport_Enabled) {
+            if (Globals::DLSS_Available && Settings::Plugin_Enabled) {
             DLSSProcessing = true;
                 //Streamline::Streamline::getSingleton()->loadDlSSBuffers(); This has been moved inside the
                 // HandlePresent function
@@ -77,7 +81,7 @@ namespace Hooks {
                }
 
                DLSSProcessing = false;
-            }
+            } 
         // Call original function, otherwise game will cease rendering and effectively freeze
         return func(pSwapChain, SyncInterval, Flags);
     }
@@ -111,7 +115,7 @@ namespace Hooks {
 
     void __stdcall hkRSSetViewports::thunk(ID3D11DeviceContext* pContext, UINT NumViewports,
                                            const D3D11_VIEWPORT* pViewports) {
-        if (DLSSProcessing || FrameViewPortChanged >= MaxFrameViewPortChanged || !Settings::Plugin_Enabled) {
+        if (DLSSProcessing || FrameViewPortChanged >= MaxFrameViewPortChanged || !Settings::Viewport_Enabled) {
             func(pContext, 1, pViewports);
             return;
         }
@@ -183,6 +187,54 @@ namespace Hooks {
         func(pContext, NumViewports, modifiedViewports.data());
     }
 
+    void hkDX11ExcCmdList::InstallHook() {
+        logger::info("Installing hkDX11ExcCmdList hook...");
+
+        // Get the device context
+        ID3D11DeviceContext* context = nullptr;
+        ID3D11Device* device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
+        device->GetImmediateContext(&context);
+        if (!context) {
+            logger::error("Failed to get ID3D11DeviceContext");
+            return;
+        }
+
+        // Get VTable from device context
+        uintptr_t* vtable = *reinterpret_cast<uintptr_t**>(context);
+        void* vtablePtr = *reinterpret_cast<void**>(context);
+
+        // Store the original function
+        func = reinterpret_cast<decltype(func)>(vtable[114]);  // Finish command list is at index 114
+        void* funcPtr = reinterpret_cast<void*>(vtable[114]);
+
+        // Replace with our hook function
+        DWORD oldProtect;
+        VirtualProtect(&vtable[114], sizeof(uintptr_t), PAGE_EXECUTE_READWRITE, &oldProtect);
+        vtable[114] = reinterpret_cast<uintptr_t>(&thunk);
+        VirtualProtect(&vtable[114], sizeof(uintptr_t), oldProtect, &oldProtect);
+
+        logger::info("hkDX11ExcCmdList hook installed!");
+    }
+    
+    void __stdcall hkDX11ExcCmdList::thunk() {
+
+        if (initPresent != 10) {
+            // Loop through all render targets and report if they are valid
+            auto& renderer = Globals::renderer;
+            if (renderer && Settings::Debug_Enabled) {
+                for (int i = 0; i < RE::RENDER_TARGET::kTOTAL; i++) {
+                    auto& renderTarget = renderer->GetRendererData()->renderTargets[i];
+                    if (renderTarget.SRV) {
+                        logger::info("Render target {} is valid.", i);
+                    }
+                }
+            }
+            initPresent++;
+        }
+
+        func();
+    }
+
     void earlyInstall() { 
     }
 
@@ -191,9 +243,13 @@ namespace Hooks {
         g_IsBackBufferActive = false;
 
         hkRSSetViewports::InstallHook();
+        hkDX11ExcCmdList::InstallHook();
 
 
         HkDX11PresentSwapChain::InstallHook();
     }
+
+    
+
 
 }

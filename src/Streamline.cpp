@@ -336,6 +336,7 @@ namespace Streamline {
             return;
         }
 
+
         // Retrieve game buffers
         auto& swapChain = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
         auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kMOTION_VECTOR];

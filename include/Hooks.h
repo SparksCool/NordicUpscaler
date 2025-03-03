@@ -27,4 +27,11 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
+    struct hkDX11ExcCmdList {
+        static void InstallHook();
+        static void WINAPI thunk();
+        static inline decltype(&thunk) func;
+
+    };
+
 }

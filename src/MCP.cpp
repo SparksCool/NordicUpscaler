@@ -60,6 +60,8 @@ namespace MCP {
 
         ImGui::Checkbox("Viewport Changing Enabled", &Settings::Viewport_Enabled);
 
+        ImGui::Checkbox("Debug Frames Enabled", &Settings::Debug_Enabled);
+
 
         if (Globals::Streamline_Init) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),"Streamline Initialized: True");
