@@ -21,17 +21,11 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
-    struct hkRSSetViewports {
+    struct HkOMSetRenderTargets {
         static void InstallHook();
-        static void WINAPI thunk(ID3D11DeviceContext* pContext, UINT NumViewports, const D3D11_VIEWPORT* pViewports);
+        static void WINAPI thunk(ID3D11DeviceContext* ctx, UINT numViews, ID3D11RenderTargetView* const* rtv,
+                                 ID3D11DepthStencilView* dsv);
         static inline decltype(&thunk) func;
-    };
-
-    struct hkDX11ExcCmdList {
-        static void InstallHook();
-        static void WINAPI thunk();
-        static inline decltype(&thunk) func;
-
     };
 
 }

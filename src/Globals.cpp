@@ -83,22 +83,6 @@ namespace Globals {
         
 
         logger::info("Globals initialized.");
-
-        #ifndef NDEBUG
-
-        void** swapVtable = Utils::get_vtable_ptr(swapChain);
-        void** contextVtable = Utils::get_vtable_ptr(context);
-        void** deviceVtable = Utils::get_vtable_ptr(g_D3D11Device);
-        //void** rendererVtable = Utils::get_vtable_ptr(renderer);
-
-        // Loop through vtables
-        //Utils::loop_vtable(swapVtable, 50);
-        //Utils::loop_vtable(contextVtable, 400);
-        //Utils::loop_vtable(deviceVtable, 50);
-        //Utils::loop_vtable(rendererVtable, 50);
-
-
-        #endif
         
     }
 
