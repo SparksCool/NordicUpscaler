@@ -335,10 +335,10 @@ namespace Streamline {
             logger::warn("Renderer is null. Cannot process frame.");
             return;
         }
-
+        
 
         // Retrieve game buffers
-        auto& swapChain = renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];  // renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
+        //auto& swapChain = renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];  // renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kFRAMEBUFFER];
         auto& motionVectors = renderer->GetRendererData()->renderTargets[RE::RENDER_TARGET::kMOTION_VECTOR];
         RE::BSGraphics::DepthStencilData depth{};
         //= renderer->GetRendererData()->depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
@@ -388,25 +388,15 @@ namespace Streamline {
         }
 
          // Ensure all resources are available before continuing
-        if (!swapChain.RTV || !motionVectors.SRV || !depth.depthSRV) {
+        if (!motionVectors.SRV || !depth.depthSRV) {
             logger::warn("Required buffers (swap chain, motion vectors, depth) are missing.");
             return;
         }
 
-        if (!swapChain.RTV) {
-            logger::warn("Swap chain SRV is missing.");
-            return;
-        }
-
         ID3D11Resource* swapChainResource = nullptr;
-        swapChain.RTV->GetResource(&swapChainResource);
-        if (!swapChainResource) {
-            logger::warn("Failed to get swap chain resource.");
-            return;
-        }
 
         // Copy buffers || This is handled in the set render targets hook now
-        //Globals::context->CopyResource(REX_CAST(colorBufferShared, ID3D11Texture2D), REX_CAST(swapChainResource, ID3D11Texture2D));
+       // Globals::context->CopyResource(REX_CAST(colorBufferShared, ID3D11Texture2D), REX_CAST(swapChainResource, ID3D11Texture2D));
 
 
         if (motionVectors.SRV) {

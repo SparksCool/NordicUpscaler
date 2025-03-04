@@ -109,7 +109,7 @@ namespace Hooks {
         void** vtable = Utils::get_vtable_ptr(context);  // Get the vtable of the swap chain
         int vIdx = 33;
 
-        func = reinterpret_cast<decltype(func)>(vtable[vIdx]);  // Present is the 8th function in the swap chain's vtable
+        func = reinterpret_cast<decltype(func)>(vtable[vIdx]);
 
         // Overwrite the Present function with our own
         DWORD oldProtect;
@@ -130,8 +130,26 @@ namespace Hooks {
             return func(ctx, numViews, rtv, dsv);
         }
 
+
+        // Copy RTV to streamline
+        ID3D11RenderTargetView* renderTargetView = rtv[0];
+        ID3D11Resource* colorBuffer = nullptr;
+        renderTargetView->GetResource(&colorBuffer);
+
+        // Return if not output resolution
+        D3D11_TEXTURE2D_DESC desc;
+        UNREX_CAST(colorBuffer, ID3D11Texture2D)->GetDesc(&desc);
+        if (desc.Width != Globals::OutputResolutionWidth || desc.Height != Globals::OutputResolutionHeight) {
+            colorBuffer->Release();
+            return func(ctx, numViews, rtv, dsv);
+        }
+
+        auto context = UNREX_CAST(Globals::context, ID3D11DeviceContext);
+        context->CopyResource(Streamline::Streamline::getSingleton()->colorBufferShared, colorBuffer);
+
         func(ctx, numViews, rtv, dsv);
         
+        colorBuffer->Release();
     }
        
 
