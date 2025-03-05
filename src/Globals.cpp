@@ -21,6 +21,8 @@ namespace Globals {
     REX::W32::ID3D11DeviceContext* context = nullptr;
     // DXGI2 Factory
     IDXGIFactory2* factory = nullptr;
+    // OmIndex
+    int omIndex = 0;
 
     // Called before the game is fully loaded
     void earlyInit() {

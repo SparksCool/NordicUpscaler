@@ -7,8 +7,10 @@
 #include <Settings.h>
 #include <Globals.h>
 #include <SKSEMCP/SKSEMenuFramework.hpp>
+#include <SKSEMCP/utils.hpp>
 
 namespace MCP {
+
     void Register() { 
         if (!SKSEMenuFramework::IsInstalled()) {
             logger::warn("SKSE Menu Framework is not installed.");
@@ -61,6 +63,9 @@ namespace MCP {
         ImGui::Checkbox("Viewport Changing Enabled", &Settings::Viewport_Enabled);
 
         ImGui::Checkbox("Debug Frames Enabled", &Settings::Debug_Enabled);
+
+        // Show omIndex
+        ImGui::Text("omIndex: %d", Globals::omIndex);
 
 
         if (Globals::Streamline_Init) {
