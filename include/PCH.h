@@ -10,3 +10,18 @@
 
 namespace logger = SKSE::log;
 using namespace std::literals;
+
+namespace stl {
+    using namespace SKSE::stl;
+
+    template <class T, std::size_t Size = 5>
+    void write_thunk_call(std::uintptr_t a_src) {
+        SKSE::AllocTrampoline(14);
+        auto& trampoline = SKSE::GetTrampoline();
+        if (Size == 6) {
+            T::func = *(uintptr_t*)trampoline.write_call<6>(a_src, T::thunk);
+        } else {
+            T::func = trampoline.write_call<Size>(a_src, T::thunk);
+        }
+    }
+}

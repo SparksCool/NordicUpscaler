@@ -17,7 +17,8 @@ namespace Settings {
 
     inline bool Plugin_Enabled = true;
     inline bool Viewport_Enabled = true;
-    inline bool Debug_Enabled = true;;
+    inline bool Debug_Enabled = true;
+    inline bool Enb_Enabled = false;
     inline int Selected_Preset_DLSS = 2;
     inline int MaxFrameViewPortUpdates = 23;
     inline const char* DLSS_Presets[] = {"Off", "Performance", "Balanced", "Quality", "Ultra Performance", "Ultra Quality"};

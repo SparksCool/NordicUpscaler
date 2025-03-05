@@ -22,6 +22,7 @@ namespace Hooks {
     int finalRenderTargetIdx = 0;
 
     bool DLSSProcessing = false;
+    bool TextureProcessing = false;
     /*PRESENT HOOK*/
 
     // Hooks into the DirectX 11 swap chain's Present function to intercept frame rendering
@@ -84,7 +85,7 @@ namespace Hooks {
 
     void __stdcall HkOMSetRenderTargets::thunk(ID3D11DeviceContext* ctx, UINT numViews,
                                                ID3D11RenderTargetView* const* rtv, ID3D11DepthStencilView* dsv) {
-        if (DLSSProcessing) {
+        if (DLSSProcessing || !Settings::Plugin_Enabled) {
             return func(ctx, numViews, rtv, dsv);
         }
 
@@ -108,11 +109,30 @@ namespace Hooks {
             return func(ctx, numViews, rtv, dsv);
         }
 
-         // Check if this meets our criteria for a render target
-        if (!(desc.BindFlags & D3D11_BIND_RENDER_TARGET) || desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM ||
-            desc.MipLevels != 1 || desc.ArraySize != 1 || !(desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
-            || desc.SampleDesc.Count != 1 || desc.SampleDesc.Quality != 0 || desc.CPUAccessFlags != 0 || desc.MiscFlags != 0 ||
-            desc.Usage != D3D11_USAGE_DEFAULT || dsv) {
+        // This can be optimized in the future
+
+        bool vanillaCond =
+            (!(desc.BindFlags & D3D11_BIND_RENDER_TARGET) || desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM ||
+             desc.MipLevels != 1 || desc.ArraySize != 1 || !(desc.BindFlags & D3D11_BIND_SHADER_RESOURCE) ||
+             desc.SampleDesc.Count != 1 || desc.SampleDesc.Quality != 0 || desc.CPUAccessFlags != 0 ||
+             desc.MiscFlags != 0 || desc.Usage != D3D11_USAGE_DEFAULT || dsv);
+
+        bool enbCond = (!(desc.BindFlags & D3D11_BIND_RENDER_TARGET) || desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM ||
+                        desc.MipLevels != 1 || desc.ArraySize != 1 || desc.BindFlags != 40 ||
+                        desc.SampleDesc.Count != 1 || desc.SampleDesc.Quality != 0 || desc.CPUAccessFlags != 0 ||
+                        desc.MiscFlags != 0 || desc.Usage != D3D11_USAGE_DEFAULT || dsv);
+        bool actualCond;
+
+        if (Settings::Enb_Enabled) {
+            actualCond = enbCond;
+        } else {
+            actualCond = vanillaCond;
+        }
+        
+ 
+
+         // Check if this does not meet our criteria for a render target
+        if (actualCond) {
             colorBuffer->Release();
             return func(ctx, numViews, rtv, dsv);  // Skip if not bindable as render target
         }
@@ -123,10 +143,8 @@ namespace Hooks {
         context->CopyResource(Streamline::Streamline::getSingleton()->colorBufferShared, colorBuffer);
 
         Streamline::Streamline* stream = Streamline::Streamline::getSingleton();
-        if (Globals::DLSS_Available && Settings::Plugin_Enabled && omIndex == finalRenderTargetIdx || !RE::UI::GetSingleton()->GameIsPaused()) {
+        if (Globals::DLSS_Available && Settings::Plugin_Enabled && omIndex == finalRenderTargetIdx + Globals::omOffset && !RE::UI::GetSingleton()->GameIsPaused()) {
             DLSSProcessing = true;
-            // Streamline::Streamline::getSingleton()->loadDlSSBuffers(); This has been moved inside the
-            // HandlePresent function
             stream->updateConstants();
 
             stream->HandlePresent();
@@ -160,14 +178,40 @@ namespace Hooks {
 
 
     /*END SET RENDER TARGETS HOOK*/
+    /*CREATE RENDER TEXTURE HOOK*/
+
+    void HkCreateRenderTexture::InstallHook() {
+        SKSE::AllocTrampoline(14);
+        auto& trampoline = SKSE::GetTrampoline();
+
+        // For specific function size, hard-code the appropriate write_call size (like 6 or 5)
+        func = trampoline.write_call<6>(RELOCATION_ID(75507, 77299).address(), thunk);
+        stl::write_thunk_call<HkCreateRenderTexture>(RELOCATION_ID(75507, 77299).address());
+    }
+
+    RE::NiTexture::RendererData* __stdcall HkCreateRenderTexture::thunk(RE::BSGraphics::Renderer* This, std::uint32_t width,
+                                                   std::uint32_t height) {
+        //float scale = Globals::getScaleFactor();
+
+        if (width == Globals::OutputResolutionWidth && height == Globals::OutputResolutionHeight) {
+            width = Globals::RenderResolutionWidth;
+            height = Globals::RenderResolutionHeight;
+        }
+
+       return func(This, width, height);
+    }
+
+    /*END CREATE RENDER TEXTURE HOOK*/
 
 
     void earlyInstall() { 
+        //HkCreateRenderTexture::InstallHook();
     }
 
     void Install() {
         HkDX11PresentSwapChain::InstallHook();
         HkOMSetRenderTargets::InstallHook();
+        
     }
 
     

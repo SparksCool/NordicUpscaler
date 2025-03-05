@@ -17,6 +17,7 @@ namespace Settings {
 
             Plugin_Enabled = ini.GetBoolValue(L"General", L"Plugin_Enabled");
             Selected_Preset_DLSS = ini.GetLongValue(L"General", L"Selected_Preset_DLSS");
+            Enb_Enabled = ini.GetBoolValue(L"General", L"Enb_Enabled");
         }
     }
 
@@ -26,6 +27,7 @@ namespace Settings {
         ini.SetUnicode();
 
         ini.SetBoolValue(L"General", L"Plugin_Enabled", Plugin_Enabled);
+        ini.SetBoolValue(L"General", L"Enb_Enabled", Enb_Enabled);
         ini.SetLongValue(L"General", L"Selected_Preset_DLSS", Selected_Preset_DLSS);
 
         ini.SaveFile(settingsPath);
@@ -37,6 +39,7 @@ namespace Settings {
     void ResetSettings() {
         Plugin_Enabled = true;
         Selected_Preset_DLSS = 0;
+        Enb_Enabled = false;
 
 
         logger::info("Settings reset.");

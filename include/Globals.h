@@ -31,6 +31,7 @@ namespace Globals
     extern REX::W32::ID3D11DeviceContext* context;
     extern IDXGIFactory2* factory;
     extern int omIndex;
+    extern int omOffset;
 
     inline bool Streamline_Init = false;
     inline bool DLSS_Available = false;

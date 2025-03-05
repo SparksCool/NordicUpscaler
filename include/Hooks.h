@@ -28,4 +28,10 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
+    struct HkCreateRenderTexture {
+        static void InstallHook();
+        static RE::NiTexture::RendererData* thunk(RE::BSGraphics::Renderer* This, std::uint32_t width, std::uint32_t height);
+        static inline REL::Relocation<decltype(thunk)> func;
+    };
+
 }

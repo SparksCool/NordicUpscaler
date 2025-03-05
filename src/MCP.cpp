@@ -38,6 +38,8 @@ namespace MCP {
 
         ImGui::Checkbox("Plugin Enabled", &Settings::Plugin_Enabled);
 
+        ImGui::Checkbox("ENB Enabled", &Settings::Enb_Enabled);
+
         ImGui::Combo("DLSS Preset", &Settings::Selected_Preset_DLSS, Settings::DLSS_Presets, IM_ARRAYSIZE(Settings::DLSS_Presets));
 
     }
@@ -60,9 +62,26 @@ namespace MCP {
             Settings::MaxFrameViewPortUpdates--;
         }
 
+        ImGui::Text("OmIndexOffset: %d", Globals::omOffset);
+
+        if (ImGui::Button("Increase OmIndexOffset")) {
+            Globals::omOffset++;
+        }
+
+        if (ImGui::Button("Decrease OmIndexOffset")) {
+            Globals::omOffset--;
+        }
+
         ImGui::Checkbox("Viewport Changing Enabled", &Settings::Viewport_Enabled);
 
         ImGui::Checkbox("Debug Frames Enabled", &Settings::Debug_Enabled);
+
+        if (ImGui::Button("Downscale")) {
+            // Resize swap chain
+            auto swapChain = UNREX_CAST(Globals::swapChain, IDXGISwapChain);
+            swapChain->ResizeBuffers(2, Globals::RenderResolutionWidth, Globals::RenderResolutionHeight,
+                                     DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+        }
 
         // Show omIndex
         ImGui::Text("omIndex: %d", Globals::omIndex);

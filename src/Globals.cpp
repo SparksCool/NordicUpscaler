@@ -23,6 +23,8 @@ namespace Globals {
     IDXGIFactory2* factory = nullptr;
     // OmIndex
     int omIndex = 0;
+    // OmOffset
+    int omOffset = 0;
 
     // Called before the game is fully loaded
     void earlyInit() {
@@ -65,12 +67,15 @@ namespace Globals {
         /* Set our target render res */
         OutputResolutionWidth = renderer->GetScreenSize().width;
         OutputResolutionHeight = renderer->GetScreenSize().height;
+        
 
         /* Initialize Streamline then check if DLSS is available */
         DLSS_Available = Streamline::Streamline::getSingleton()->DLSSAvailable();
         Streamline::Streamline::getSingleton()->loadDlSSBuffers();
         Streamline::Streamline::getSingleton()->getDLSSRenderResolution();
         Streamline::Streamline::getSingleton()->allocateBuffers();
+        
+        
        
 
         // Force Dynamic Resolution On | This is taken from Doodlums Dynamic Resolution mod
@@ -87,6 +92,8 @@ namespace Globals {
         logger::info("Globals initialized.");
         
     }
+
+
 
     // Get the scale factor
     float getScaleFactor() {
