@@ -78,9 +78,7 @@ namespace MCP {
 
         if (ImGui::Button("Downscale")) {
             // Resize swap chain
-            auto swapChain = UNREX_CAST(Globals::swapChain, IDXGISwapChain);
-            swapChain->ResizeBuffers(2, Globals::RenderResolutionWidth, Globals::RenderResolutionHeight,
-                                     DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+            Globals::Resize_Queued = true;
         }
 
         // Show omIndex

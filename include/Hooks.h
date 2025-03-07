@@ -28,10 +28,13 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
-    struct HkCreateRenderTexture {
+    struct HkCreate2DTexture {
         static void InstallHook();
-        static RE::NiTexture::RendererData* thunk(RE::BSGraphics::Renderer* This, std::uint32_t width, std::uint32_t height);
-        static inline REL::Relocation<decltype(thunk)> func;
+        static HRESULT WINAPI thunk(ID3D11Device* pDevice,
+        const D3D11_TEXTURE2D_DESC* pDesc,
+        const D3D11_SUBRESOURCE_DATA* pInitialData,
+        ID3D11Texture2D** ppTexture2D);
+        static inline decltype(&thunk) func;
     };
 
 }

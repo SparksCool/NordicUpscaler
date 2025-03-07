@@ -37,6 +37,7 @@ namespace Globals
     inline bool DLSS_Available = false;
     inline bool SwapChain_Hooked = false;
     inline bool DRS_Active = false;
+    inline bool Resize_Queued = false;
 
     // These are the resolutions that the game is rendering at
     inline int RenderResolutionWidth = 0;

@@ -13,7 +13,7 @@ namespace Utils {
     void** get_vtable_ptr(void* obj) { return *reinterpret_cast<void***>(obj); }
 
     void loop_vtable(void** vtable, int size) {
-        for (int i = 100; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             if (!vtable[i]) {
                 continue;
             }

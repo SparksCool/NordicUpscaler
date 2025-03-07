@@ -91,6 +91,10 @@ namespace Globals {
 
         logger::info("Globals initialized.");
         
+
+        // Loop through device vtable this is just for RE purposes
+        void** vtable = Utils::get_vtable_ptr(g_D3D11Device);
+        //Utils::loop_vtable(vtable, 200);
     }
 
 

@@ -23,6 +23,9 @@ namespace Hooks {
 
     bool DLSSProcessing = false;
     bool TextureProcessing = false;
+    int resized = false;
+    ID3D11RenderTargetView* lowResRTV = nullptr;
+    ID3D11Texture2D* lowResTexture = nullptr;
     /*PRESENT HOOK*/
 
     // Hooks into the DirectX 11 swap chain's Present function to intercept frame rendering
@@ -54,13 +57,40 @@ namespace Hooks {
 
         finalRenderTargetIdx = omIndex;
         omIndex = 0;
+        resized = 0;
 
         Globals::omIndex = finalRenderTargetIdx;
 
         
 
         // Call original function, otherwise game will cease rendering and effectively freeze
-        return func(pSwapChain, SyncInterval, Flags);
+        HRESULT hr = func(pSwapChain, SyncInterval, Flags);
+
+        if (FAILED(hr)) {
+            logger::warn("Present failed, HRESULT: {:#x}", hr);
+            return hr;
+        }
+
+        if (Globals::Resize_Queued) {
+            Globals::Resize_Queued = false;
+            auto context = UNREX_CAST(Globals::context, ID3D11DeviceContext);
+            context->ClearState();
+            context->Flush();
+
+            auto swapChain = UNREX_CAST(Globals::swapChain, IDXGISwapChain);
+
+            DXGI_SWAP_CHAIN_DESC desc;
+            swapChain->GetDesc(&desc);
+
+            HRESULT hr = swapChain->ResizeBuffers(desc.BufferCount, Globals::RenderResolutionWidth, Globals::RenderResolutionHeight,
+                                                  desc.BufferDesc.Format, desc.Flags);
+            if (FAILED(hr)) {
+                
+                logger::info("ResizeBuffers failed! HRESULT: {:#X}", hr);
+            }
+        }
+
+        return S_OK;
     }
 
     /*END PRESENT HOOK*/
@@ -85,7 +115,7 @@ namespace Hooks {
 
     void __stdcall HkOMSetRenderTargets::thunk(ID3D11DeviceContext* ctx, UINT numViews,
                                                ID3D11RenderTargetView* const* rtv, ID3D11DepthStencilView* dsv) {
-        if (DLSSProcessing || !Settings::Plugin_Enabled) {
+        if (DLSSProcessing) {
             return func(ctx, numViews, rtv, dsv);
         }
 
@@ -101,9 +131,11 @@ namespace Hooks {
         ID3D11Resource* colorBuffer = nullptr;
         renderTargetView->GetResource(&colorBuffer);
 
-        // Return if not output resolution
+
         D3D11_TEXTURE2D_DESC desc;
+        auto device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
         UNREX_CAST(colorBuffer, ID3D11Texture2D)->GetDesc(&desc);
+
         if (desc.Width != Globals::OutputResolutionWidth || desc.Height != Globals::OutputResolutionHeight) {
             colorBuffer->Release();
             return func(ctx, numViews, rtv, dsv);
@@ -180,35 +212,46 @@ namespace Hooks {
     /*END SET RENDER TARGETS HOOK*/
     /*CREATE RENDER TEXTURE HOOK*/
 
-    void HkCreateRenderTexture::InstallHook() {
-        SKSE::AllocTrampoline(14);
-        auto& trampoline = SKSE::GetTrampoline();
+    void HkCreate2DTexture::InstallHook() {
+        // Vtable hook
+        auto device = UNREX_CAST(Globals::g_D3D11Device, ID3D11Device);
 
-        // For specific function size, hard-code the appropriate write_call size (like 6 or 5)
-        func = trampoline.write_call<6>(RELOCATION_ID(75507, 77299).address(), thunk);
-        stl::write_thunk_call<HkCreateRenderTexture>(RELOCATION_ID(75507, 77299).address());
+        void** vtable = Utils::get_vtable_ptr(device);  // Get the vtable of the device
+        int vIdx = 5;
+
+        func = reinterpret_cast<decltype(func)>(vtable[vIdx]);
+
+        // Overwrite the Present function with our own
+        DWORD oldProtect;
+        VirtualProtect(&vtable[vIdx], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
+        vtable[vIdx] = &thunk;
+        VirtualProtect(&vtable[vIdx], sizeof(void*), oldProtect, &oldProtect);
     }
 
-    RE::NiTexture::RendererData* __stdcall HkCreateRenderTexture::thunk(RE::BSGraphics::Renderer* This, std::uint32_t width,
-                                                   std::uint32_t height) {
+    HRESULT __stdcall HkCreate2DTexture::thunk(ID3D11Device* pDevice, const D3D11_TEXTURE2D_DESC* pDesc,
+                                            const D3D11_SUBRESOURCE_DATA* pInitialData, ID3D11Texture2D** ppTexture2D)
+    {
         //float scale = Globals::getScaleFactor();
 
-        if (width == Globals::OutputResolutionWidth && height == Globals::OutputResolutionHeight) {
-            width = Globals::RenderResolutionWidth;
-            height = Globals::RenderResolutionHeight;
+        D3D11_TEXTURE2D_DESC newDesc = *pDesc;
+
+        if (newDesc.Width == Globals::OutputResolutionWidth && newDesc.Height == Globals::OutputResolutionHeight) {
+            newDesc.Width = Globals::RenderResolutionWidth;
+            newDesc.Height = Globals::RenderResolutionHeight;
         }
 
-       return func(This, width, height);
+        return func(pDevice, &newDesc, pInitialData, ppTexture2D);
     }
 
     /*END CREATE RENDER TEXTURE HOOK*/
 
 
     void earlyInstall() { 
-        //HkCreateRenderTexture::InstallHook();
+        
     }
 
     void Install() {
+       // HkCreate2DTexture::InstallHook();
         HkDX11PresentSwapChain::InstallHook();
         HkOMSetRenderTargets::InstallHook();
         
