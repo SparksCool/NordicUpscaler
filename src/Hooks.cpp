@@ -210,7 +210,7 @@ namespace Hooks {
 
 
     /*END SET RENDER TARGETS HOOK*/
-    /*CREATE RENDER TEXTURE HOOK*/
+    /*CREATE 2D TEXTURE HOOK*/
 
     void HkCreate2DTexture::InstallHook() {
         // Vtable hook
@@ -226,24 +226,118 @@ namespace Hooks {
         VirtualProtect(&vtable[vIdx], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
         vtable[vIdx] = &thunk;
         VirtualProtect(&vtable[vIdx], sizeof(void*), oldProtect, &oldProtect);
+
+        // Resize buffers to trigger 2d texture creation
+        REX::W32::DXGI_SWAP_CHAIN_DESC desc;
+        Globals::swapChain->GetDesc(&desc);
+        Globals::swapChain->ResizeBuffers(desc.bufferCount, Globals::RenderResolutionWidth,
+                                          Globals::RenderResolutionHeight, desc.bufferDesc.format, desc.flags);
     }
 
     HRESULT __stdcall HkCreate2DTexture::thunk(ID3D11Device* pDevice, const D3D11_TEXTURE2D_DESC* pDesc,
                                             const D3D11_SUBRESOURCE_DATA* pInitialData, ID3D11Texture2D** ppTexture2D)
     {
-        //float scale = Globals::getScaleFactor();
+        float scale = Globals::getScaleFactor();
 
         D3D11_TEXTURE2D_DESC newDesc = *pDesc;
-
-        if (newDesc.Width == Globals::OutputResolutionWidth && newDesc.Height == Globals::OutputResolutionHeight) {
-            newDesc.Width = Globals::RenderResolutionWidth;
-            newDesc.Height = Globals::RenderResolutionHeight;
-        }
+        newDesc.Width *= scale;
+        newDesc.Height *= scale;
 
         return func(pDevice, &newDesc, pInitialData, ppTexture2D);
     }
 
-    /*END CREATE RENDER TEXTURE HOOK*/
+    /*END CREATE 2D TEXTURE HOOK*/
+    /*CREATE RENDER TARGET VIEW HOOK*/
+    void HkCreateRenderTargetView::InstallHook() {
+        // Create dummy device to get the vtable
+        DXGI_SWAP_CHAIN_DESC sd = {};
+        sd.BufferCount = 1;
+        sd.BufferDesc.Width = 1;
+        sd.BufferDesc.Height = 1;
+        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        sd.OutputWindow = GetForegroundWindow();  // Replace if needed
+        sd.SampleDesc.Count = 1;
+        sd.Windowed = TRUE;
+        sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+
+        ID3D11Device* device = nullptr;
+        ID3D11DeviceContext* context = nullptr;
+        IDXGISwapChain* swapChain = nullptr;
+        D3D_FEATURE_LEVEL featureLevel;
+
+        if (SUCCEEDED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0,
+                                                    D3D11_SDK_VERSION, &sd, &swapChain, &device, &featureLevel,
+                                                    &context))) {
+            void** vtable = *(void***)device;
+            func = reinterpret_cast<decltype(func)>(vtable[7]);  // Index 7 = CreateRenderTargetView
+
+            // Overwrite vtable entry
+            DWORD oldProtect;
+            VirtualProtect(&vtable[7], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
+            vtable[7] = reinterpret_cast<void*>(&thunk);
+            VirtualProtect(&vtable[7], sizeof(void*), oldProtect, &oldProtect);
+
+            logger::info("[Hook] CreateRenderTargetView installed");
+
+            // Cleanup dummy device
+            swapChain->Release();
+            context->Release();
+            device->Release();
+
+            // Resize buffers to trigger our hook
+            REX::W32::DXGI_SWAP_CHAIN_DESC desc;
+            Globals::swapChain->GetDesc(&desc);
+            Globals::swapChain->ResizeBuffers(desc.bufferCount, Globals::RenderResolutionWidth,
+                                              Globals::RenderResolutionHeight, desc.bufferDesc.format, desc.flags);
+
+        } else {
+            logger::info("[Hook] Failed to create dummy D3D11 device");
+        }
+    }
+
+
+    HRESULT WINAPI HkCreateRenderTargetView::thunk(ID3D11Device* pDevice, ID3D11Resource* pResource,
+                                                   const D3D11_RENDER_TARGET_VIEW_DESC* pDesc,
+                                                   ID3D11RenderTargetView** ppRTView) {
+        logger::info("[Hook] CreateRenderTargetView called!");
+
+        ID3D11Texture2D* pTex2D = nullptr;
+        HRESULT hr = pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pTex2D);
+
+        if (SUCCEEDED(hr) && pTex2D) {
+            D3D11_TEXTURE2D_DESC desc;
+            pTex2D->GetDesc(&desc);
+
+            if (desc.Width == Globals::OutputResolutionWidth && desc.Height == Globals::OutputResolutionHeight) {
+                logger::info("[Hook] Intercepted render target. Creating downscaled version...");
+
+                // Create a smaller texture
+                D3D11_TEXTURE2D_DESC smallDesc = desc;
+                smallDesc.Width = Globals::OutputResolutionWidth;
+                smallDesc.Height = Globals::OutputResolutionHeight;
+
+                ID3D11Texture2D* smallTex = nullptr;
+                hr = pDevice->CreateTexture2D(&smallDesc, nullptr, &smallTex);
+
+                if (SUCCEEDED(hr) && smallTex) {
+                    // Create RTV on downscaled texture
+                    hr = func(pDevice, smallTex, pDesc, ppRTView);
+                    smallTex->Release();
+
+                    pTex2D->Release();
+                    return hr;
+                }
+            }
+            pTex2D->Release();
+        }
+
+        // Call the original function
+        return func(pDevice, pResource, pDesc, ppRTView);
+    }
+
+    /*CREATE RENDER TARGET VIEW HOOK END*/
+
 
 
     void earlyInstall() { 
@@ -251,9 +345,13 @@ namespace Hooks {
     }
 
     void Install() {
-       // HkCreate2DTexture::InstallHook();
+
+        //HkCreate2DTexture::InstallHook();
         HkDX11PresentSwapChain::InstallHook();
         HkOMSetRenderTargets::InstallHook();
+        HkCreateRenderTargetView::InstallHook();
+
+        
         
     }
 

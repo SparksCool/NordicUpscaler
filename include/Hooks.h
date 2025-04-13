@@ -37,4 +37,11 @@ namespace Hooks {
         static inline decltype(&thunk) func;
     };
 
+    struct HkCreateRenderTargetView {
+        static void InstallHook();
+        static HRESULT WINAPI thunk(ID3D11Device* pDevice, ID3D11Resource* pResource,
+                                    const D3D11_RENDER_TARGET_VIEW_DESC* pDesc, ID3D11RenderTargetView** ppRTView);
+        static inline decltype(&thunk) func;
+    };
+
 }
