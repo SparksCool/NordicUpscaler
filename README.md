@@ -1,3 +1,7 @@
+# -- Notice: Discontinued development --
+I have since swapped over to Community Shaders which has a functional implementation of upscaling, frame gen, etc
+This was a very informative/educational project and I aim to do more with SKSE in the future, feel free to learn from the code here if it provides any value for any reason.
+
 # NordicUpscaler
 A SKSE Plugin for upscaling Skyrim with DLSS and later other methods, designed to work with ENB.
 
